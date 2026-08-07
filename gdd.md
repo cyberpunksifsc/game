@@ -60,7 +60,7 @@ Cyberpunk
   - Power-Ups
 
 ## Targeted platforms
-  - Android
+  - Android/Web
 
 ## Monetization model (Brief/Document) 
   - Power-Ups como itens, pagos
