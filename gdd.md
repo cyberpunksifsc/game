@@ -99,28 +99,22 @@ O loop principal de gameplay combina a tensão da física de navegação mecâni
 
 A narrativa implícita reflete o tema do trabalhador descartável. No topo da tela, métricas da corporação avaliam a eficiência do jogador em tempo real. Erros diminuem a pontuação e aumentam o risco de "rescisão imediata de contrato" (morte ou demissão). O jogo utiliza elementos visuais neon contrastando com a sujeira e a fuligem dos vidros, criando uma atmosfera imersiva que traduz o desgaste físico e mental de ser apenas mais uma engrenagem viva em uma máquina automatizada.
 
-Projetado especificamente para as plataformas Android e Web, o projeto foca em controles de toque/clique intuitivos baseados em física de física de recuo e deslize. O objetivo final do jogo não é chegar ao fim de uma história, mas alcançar a maior pontuação possível no placar global, sobrevivendo o máximo de tempo ao ritmo cada vez mais agressivo dos obstáculos da fachada antes que a inevitável inadimplência do trabalhador aconteça.
-
 # What sets this project apart?
   - Premissa única de gameplay: Combina a profissão de alpinista industrial com a sobrevivência vertical em um ambiente cyberpunk.
   - Crítica social integrada ao loop de jogo: A pontuação não reflete apenas "pontos", mas a avaliação de desempenho corporativo do trabalhador para não ser substituído.
 
+
+
+
+
+
 ## Core Gameplay Mechanics (Detailed)
   - Limpeza e Reparo de Janelas
-    
-  Details: O objetivo primário de receita no jogo. Cada painel de vidro apresenta diferentes estados: sujeira leve, graxa acumulada ou estilhaços provocados por disparos da cidade. O jogador precisa interagir diretamente com o vidro para limpá-lo ou aplicar resina de reparo rápido.
-  
-  How it works: Ao posicionar o personagem em frente a um painel de vidro danificado ou sujo, o jogador realiza gestos na tela (ou segura o botão) para acionar o limpador. Painéis limpos geram pontuação contínua e aumentam o multiplicador de eficiência do turno.
-  - [Core Gameplay Mechanic #2]
-    - [Details] /Describe in 2 Paragraphs or less/
-    - [How it works] /Describe in 2 Paragraphs or less/
-  - [Core Gameplay Mechanic #3]
-    - [Details] /Describe in 2 Paragraphs or less/
-    - [How it works] /Describe in 2 Paragraphs or less/
-  - [Core Gameplay Mechanic #4]
-    - [Details] /Describe in 2 Paragraphs or less/
-    - [How it works] /Describe in 2 Paragraphs or less/
-
+    - Details: O objetivo primário de receita no jogo. Cada painel de vidro apresenta diferentes estados: sujeira leve, graxa acumulada ou estilhaços provocados por disparos da cidade. O jogador precisa interagir diretamente com o vidro para limpá-lo ou aplicar resina de reparo rápido.
+    - How it works: Ao posicionar o personagem em frente a um painel de vidro danificado ou sujo, o jogador realiza gestos na tela (ou segura o botão) para acionar o limpador. Painéis limpos geram pontuação contínua e aumentam o multiplicador de eficiência do turno.
+  - Power-Ups Pré-Partida (Monetização)
+    - Details: Itens consumíveis adquiridos ou equipados antes do início do turno de trabalho que conferem vantagens temporárias ou passivas durante a subida.
+    - How it works: Através da loja interna, o jogador pode adquirir itens
 # Story and Gameplay
 
 ## Story (Brief)
