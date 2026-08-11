@@ -166,14 +166,23 @@ O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu.
   - *PatrolDroneAI.cs / .gd:* Comportamento de drones de patrulha (rotas verticais/horizontais, escaneamento de área e disparos de advertência).
   - *StrayBulletProjectile.cs / .gd:* Trajetória e física de projéteis perdidos disparados da cidade baixa em direção ao edifício.
 
+
 ## Animation
-  - Environment Animations 
-    - Example
-  - Character Animations 
-    - Player
-      - Example 
-    - NPC
-      - Example
+- **Environment Animations**
+  - *Vidros e Fachada:* Transição de estilhaçamento de janelas sob impacto de tiros, animação de sujeira sumindo com limpeza ultrassônica, iluminação neon piscando nos painéis decorativos.
+  - *Drones e Perigos:* Hélices/turbinas girando nos drones, luzes de alerta vermelhas piscando antes de disparar.
+
+- **Character Animations**
+  - **Player**
+    - *Idle (Suspenso):* Balanço suave do corpo na corda com micro-ajustes de equilíbrio.
+    - *Preparo do Salto (Recuo):* Agachamento no vidro e puxada da corda para trás acumulando tensão (*charge*).
+    - *Lançamento / Voo:* Corpo projetado pelo ar em rotação ou posição aerodinâmica.
+    - *Ancoragem:* Disparo de nova garra/corda com o braço estendido.
+    - *Ação de Limpeza / Conserto:* Movimento rápido de braço passando o rodo/raspador magnético ou aplicador de resina a laser.
+    - *Reação a Dano e Morte:* Projeção para trás ao levar um tiro, tentativa desajeitada de se segurar ao perder a corda, animação de queda livre descontrolada.
+  - **NPCs / Drones**
+    - *Drone de Patrulha:* Estabilização no ar, animação de escaneamento com laser vermelho, recuo de disparo ao atirar.
+   
 
 # Schedule
   - <Object #1>
