@@ -124,30 +124,32 @@ O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu.
     - Carros voadores passando ao fundo (Low poly / sprites 3D).
 
 ## Sound
-  - Sound List (Ambient)
-    - Outside
-      - Level 1
-      - Level 2 
-      - Level 3
-      - etc.
-    - Inside
-      - Level 1
-      - Level 2
-      - Level 3
-      - etc.
-  - Sound List (Player)
-    - Character Movement Sound List
-      - Example 1
-      - Example 2
-      - etc. 
-    - Character Hit / Collision Sound list
-      - Example 1
-      - Example 2
-      - etc.
-    - Character on Injured / Death sound list
-      - Example 1
-      - Example 2
-      - etc.
+- **Sound List (Ambient)**
+  - **Outside**
+    - *Level 1 (Sectors Baixos):* Som denso de tráfego aéreo ruidoso, sirenes de emergência na cidade baixa, ruído constante de escapamentos sintéticos e eco distorcido de tiros em becos.
+    - *Level 2 (Sectors Médios):* Zunido contínuo de vento de média altitude, zumbido de neon piscando na fachada, drones comerciais passando com anúncios holográficos em áudio.
+    - *Level 3 (Sectors Altos / Apex):* Vento uivante e gélido de alta altitude, silêncio corporativo interrompido apenas por turbinas de navetas executivas e tempestades eletromagnéticas.
+  - **Inside (Vindo através das janelas)**
+    - *Level 1:* Músicas agitadas (Industrial Synth), ruído de apartamentos lotados, ruído de maquinário das zonas industriais do prédio.
+    - *Level 2:* Escritórios corporativos com conversas abafadas, bipes de servidores e sistemas de ar condicionado.
+    - *Level 3:* Música lounge clássica/futurista suave, eco de festas exclusivas da elite em coberturas de luxo.
+
+- **Sound List (Player)**
+  - **Character Movement Sound List**
+    - *Corda / Ancoragem:* Som de trava metálica do mosquetão se fixando no trilho, ruído sintético da corda de fibra tensionando sob peso.
+    - *Deslize / Pêndulo:* Zunido de atrito do rolete na linha de aço, vento cortando os ouvidos na aceleração.
+    - *Pouso / Impacto suave:* Passos de botas táticas reforçadas batendo no painel de vidro reforçado.
+    - *Limpeza / Reparo:* Chiado do spray limpador ultrassônico, rodo magnético raspando a sujeira, som de selamento térmico/laser da resina de reparo rápido.
+  - **Character Hit / Collision Sound list**
+    - *Impacto de Projétil:* Balas ricocheteando no vidro ao lado, estalo de projétil perfurando o macacão de trabalho ou placa de blindagem.
+    - *Ataque de Drone:* Choque elétrico de drones de choque ou zunido de lâmina corte-fio.
+    - *Colisão Forte:* Som surdo do corpo do alpinista colidindo contra vigas metálicas ou bordas de janelas.
+  - **Character on Injured / Death sound list**
+    - *Dano Recebido:* Gemido abafado do personagem sob o capacete, respiração acelerada em momentos de baixa vida.
+    - *Alerta de Vitalidade:* Bipe de emergência do visor do capacete sinalizando estrutura ou saúde crítica.
+    - *Morte / Queda:* Som da corda de segurança se rompendo sob tensão/corte, grito de queda livre se esvaindo no abismo urbano, alarme contínuo de "Contrato Encerrado".
+   
+
 
 ## Code
   - Character Scripts (Player Pawn/Player Controller)
