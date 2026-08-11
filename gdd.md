@@ -84,8 +84,6 @@ Cyberpunk
 
 ## The elevator Pitch
 
-[A one sentence pitch for your game.]
-Pretend that your were pitching your game to a executive going to the elevator. You have less than 60 Seconds.
 Já imaginou se os alpinistas industriais tivessem que se proteger dos perigos de um mundo futurista onde tiros viajam em sua direção toda hora enquanto limpam os vidros para não serem demitidos? Então, é o que o meu jogo propõe. 
 
 ## Project Description (Brief):
@@ -104,16 +102,15 @@ A narrativa implícita reflete o tema do trabalhador descartável. No topo da te
 Projetado especificamente para as plataformas Android e Web, o projeto foca em controles de toque/clique intuitivos baseados em física de física de recuo e deslize. O objetivo final do jogo não é chegar ao fim de uma história, mas alcançar a maior pontuação possível no placar global, sobrevivendo o máximo de tempo ao ritmo cada vez mais agressivo dos obstáculos da fachada antes que a inevitável inadimplência do trabalhador aconteça.
 
 # What sets this project apart?
-  - <Reason #1>
-  - <Reason #2>
-  - <Reason #3>
-  - <Reason #4>
-  - <etc.>
+  - Premissa única de gameplay: Combina a profissão de alpinista industrial com a sobrevivência vertical em um ambiente cyberpunk.
+  - Crítica social integrada ao loop de jogo: A pontuação não reflete apenas "pontos", mas a avaliação de desempenho corporativo do trabalhador para não ser substituído.
 
 ## Core Gameplay Mechanics (Detailed)
-  - [Core Gameplay Mechanic #1]
-    - [Details] /Describe in 2 Paragraphs or less/
-    - [How it works] /Describe in 2 Paragraphs or less/
+  - Limpeza e Reparo de Janelas
+    
+  Details: O objetivo primário de receita no jogo. Cada painel de vidro apresenta diferentes estados: sujeira leve, graxa acumulada ou estilhaços provocados por disparos da cidade. O jogador precisa interagir diretamente com o vidro para limpá-lo ou aplicar resina de reparo rápido.
+  
+  How it works: Ao posicionar o personagem em frente a um painel de vidro danificado ou sujo, o jogador realiza gestos na tela (ou segura o botão) para acionar o limpador. Painéis limpos geram pontuação contínua e aumentam o multiplicador de eficiência do turno.
   - [Core Gameplay Mechanic #2]
     - [Details] /Describe in 2 Paragraphs or less/
     - [How it works] /Describe in 2 Paragraphs or less/
