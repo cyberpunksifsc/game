@@ -63,7 +63,7 @@ Cyberpunk
   - Android/Web
 
 ## Monetization model (Brief/Document) 
-  - Power-Ups como itens, pagos
+  - Power-Ups como itens pagos antes do inicio do jogo.
 
 ## Project Scope 
   - Game Time Scale
@@ -74,28 +74,19 @@ Cyberpunk
       - Team Member name?
         - Nícolas Pitz
         - Developer, Designer e Audio Designer
-        - Coca-cola and a hamburguer
     - Licenses / Hardware / Other Costs
     - Total Costs with breakdown
 
 ## Influences (Brief)
   - Influence #1
     - Medium (Television, Games, Literature, Movies, etc.)
-    - /Explain why this is an influence in 1 Paragraph or less/
-  - Influence #2
-    - Medium (Television, Games, Literature, Movies, etc.)
-    - /Explain why this is an influence in 1 Paragraph or less/
-  - Influence #3
-    - Medium (Television, Games, Literature, Movies, etc.)
-    - /Explain why this is an influence in 1 Paragraph or less/
-  - Influence #4>
-    - Medium (Television, Games, Literature, Movies, etc.)
-    - /Explain why this is an influence in 1 Paragraph or less/
+    - A estética vai ser influênciada pelo jogo Cyberpunk 2077.
 
 ## The elevator Pitch
 
 [A one sentence pitch for your game.]
 Pretend that your were pitching your game to a executive going to the elevator. You have less than 60 Seconds.
+Já imaginou se os alpinistas industriais tivessem que se proteger dos perigos de um mundo futurista onde tiros viajam em sua direção toda hora enquanto limpam os vidros para não serem demitidos? Então, é o que o meu jogo propõe. 
 
 ## Project Description (Brief):
 
@@ -104,8 +95,13 @@ Pretend that your were pitching your game to a executive going to the elevator. 
 
 ## Project Description (Detailed)
 
-[Four Paragraphs or more If needs be]
-[No more than six paragraphs]
+Em uma New Tokyo distópica do ano 233 d.IA (depois da IA), a disparidade social atinge o topo dos arranha-céus gigantescos mantidos por megacorporações impiedosas. O jogador assume o papel de um dos últimos alpinistas industriais humanos da cidade, contratado por uma empresa de fachada para realizar a manutenção externa do maior edifício da metrópole. O trabalho consiste em limpar a sujeira acumulada e reparar vidros danificados por tiroteios e drones com defeito, tudo isso suspenso a centenas de metros do chão sob condições extremas.
+
+O loop principal de gameplay combina a tensão da física de navegação mecânica com a agilidade de um jogo arcade acelerado. Enquanto desliza e pula entre as janelas utilizando suas cordas de segurança, o jogador precisa gerenciar o tempo, evitar disparos cruzados vindo do tráfego aéreo ou de guerras de gangues nos andares inferiores, e manter uma taxa de limpeza constante para não ser demitido. O ritmo é frenético, onde cada decisão de movimento pode significar a diferença entre acumular pontos ou despencar no abismo urbano.
+
+A narrativa implícita reflete o tema do trabalhador descartável. No topo da tela, métricas da corporação avaliam a eficiência do jogador em tempo real. Erros diminuem a pontuação e aumentam o risco de "rescisão imediata de contrato" (morte ou demissão). O jogo utiliza elementos visuais neon contrastando com a sujeira e a fuligem dos vidros, criando uma atmosfera imersiva que traduz o desgaste físico e mental de ser apenas mais uma engrenagem viva em uma máquina automatizada.
+
+Projetado especificamente para as plataformas Android e Web, o projeto foca em controles de toque/clique intuitivos baseados em física de física de recuo e deslize. O objetivo final do jogo não é chegar ao fim de uma história, mas alcançar a maior pontuação possível no placar global, sobrevivendo o máximo de tempo ao ritmo cada vez mais agressivo dos obstáculos da fachada antes que a inevitável inadimplência do trabalhador aconteça.
 
 # What sets this project apart?
   - <Reason #1>
