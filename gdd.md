@@ -116,15 +116,12 @@ O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu.
 
 ## 3D
   - Characters List
-    - Character #1
-    - Character #2
-    - Character #3
-    - etc.
+    - Protagonista (Alpinista Industrial): Modelo vestindo trajes macacão de trabalho desgastado, capacete futurista com visor LED e mosquetões/equipamentos visíveis.
+    - Drones Inimigos: Drones de patrulha com luzes vermelhas de alerta.
   - Environmental Art Lists
-    - Example #1
-    - Example #2 
-    - Example #3
-    - etc.
+    - Módulos de janelas e sacadas futuristas para construção da fachada.
+    - Leandros e antenas anexadas à estrutura do prédio.
+    - Carros voadores passando ao fundo (Low poly / sprites 3D).
 
 ## Sound
   - Sound List (Ambient)
