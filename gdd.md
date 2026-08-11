@@ -95,9 +95,15 @@ Um jogo arcade de sobrevivência e ação em ritmo acelerado onde você controla
 
 ## Gameplay (Detailed)
 
-[Go into as much detail as needs be]
-[Spare no detail]
-[Combine this with the game mechanics section above]
+O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu. O prédio é gerado proceduralmente à medida que a partida progride ou conforme o jogador se desloca verticalmente e horizontalmente.
+
+  - Fluxo da Partida: O jogador inicia no topo ou na base de uma seção. O tempo começa a contar e a pontuação cai gradualmente se o jogador ficar inativo.
+
+  - Loop de Ação: O jogador identifica janelas com pontos (sujas/quebradas), ajusta a tensão da corda, lança o personagem até o local, realiza a ação rápida de limpeza/conserto e se projeta para o próximo objetivo.
+
+  - Ameaças Dinâmicas: A qualquer momento, alertas visuais indicam a chegada de ameaças (tiros vindos da cidade, drones de patrulha descontrolados, descargas elétricas na fachada). O jogador deve usar a mecânica de recuo ou ancoragem especial para se esquivar rapidamente.
+
+  - Fim de Partida (Game Over): A partida encerra quando a vida do jogador chega a zero (devido a danos de projéteis/quedas) ou quando a barra de "Desempenho Corporativo" se esgota por falta de limpeza de janelas.
 
 # Assets Needed
 
