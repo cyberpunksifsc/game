@@ -152,12 +152,19 @@ O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu.
 
 
 ## Code
-  - Character Scripts (Player Pawn/Player Controller)
-    - Example
-  - Ambient Scripts (Runs in the background)
-    - Example
-  - NPC Scripts
-    - Example
+- **Character Scripts (Player Pawn/Player Controller)**
+  - *PlayerRopePhysics.cs / .gd:* Gerencia a física de pêndulo, tensão da linha, ancoragem dinâmica nos vidros e mecânica de recuo (*slingshot*).
+  - *PlayerCleaningSystem.cs / .gd:* Controla a detecção de janelas sujas/quebradas, taxa de limpeza, aplicação de resina e multiplicadores de score por janela limpa.
+  - *PlayerHealthAndEquipment.cs / .gd:* Gerencia a saúde do jogador, resistência da corda, ativação de Power-ups ativos e efeitos de dano.
+
+- **Ambient Scripts (Runs in the background)**
+  - *BuildingGenerator.cs / .gd:* Algoritmo procedural de fachada que gera colunas de janelas, vigas, obstáculos e pontos de ancoragem conforme a descida/subida.
+  - *HazardSpawner.cs / .gd:* Controlador de eventos dinâmicos (tráfego de drones inimigos, disparos perdidos vindo da cidade, rajadas de vento lateral).
+  - *CorporateScoreSystem.cs / .gd:* Monitora a taxa de rendimento do jogador em tempo real, decrementa barra de "Eficiência Corporativa" e aciona o encerramento da partida por despesquisa/inadimplência.
+
+- **NPC / Hazard Scripts**
+  - *PatrolDroneAI.cs / .gd:* Comportamento de drones de patrulha (rotas verticais/horizontais, escaneamento de área e disparos de advertência).
+  - *StrayBulletProjectile.cs / .gd:* Trajetória e física de projéteis perdidos disparados da cidade baixa em direção ao edifício.
 
 ## Animation
   - Environment Animations 
