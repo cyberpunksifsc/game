@@ -2,50 +2,9 @@
 
 Revision: 0.0.1
 
-
 > GDD Template Written by: Benjamin “HeadClot” Stanley
 
-
-- Overview
-  - Theme / Setting / Genre
-  - Core Gameplay Mechanics Brief
-  - Targeted platforms
-  - Monetization model (Brief/Document)
-  - Project Scope
-  - Influences (Brief)
-    - <Influence #1>
-    - <Influence #2>
-    - <Influence #3>
-    - <Influence #4>
-  - The elevator Pitch
-  - Project Description (Brief):
-  - Project Description (Detailed)
-- What sets this project apart?
-  - Core Gameplay Mechanics (Detailed)
-    - <Core Gameplay Mechanic #1>
-    - <Core Gameplay Mechanic #2>
-    - <Core Gameplay Mechanic #3>
-    - <Core Gameplay Mechanic #4>
-- Story and Gameplay
-  - Story (Brief)
-  - Story (Detailed)
-  - Gameplay (Brief)
-  - Gameplay (Detailed)
-- Assets Needed
-  - 2D
-  - 3D
-  - Sound
-  - Code
-  - Animation
-- Schedule
-  - <Object #1>
-  - <Object #2>
-  - <Object #3>
-  - <Object #4>
-
-
 # Overview
-
 
 ## Theme / Setting / Genre
 
@@ -99,13 +58,11 @@ O loop principal de gameplay combina a tensão da física de navegação mecâni
 
 A narrativa implícita reflete o tema do trabalhador descartável. No topo da tela, métricas da corporação avaliam a eficiência do jogador em tempo real. Erros diminuem a pontuação e aumentam o risco de "rescisão imediata de contrato" (morte ou demissão). O jogo utiliza elementos visuais neon contrastando com a sujeira e a fuligem dos vidros, criando uma atmosfera imersiva que traduz o desgaste físico e mental de ser apenas mais uma engrenagem viva em uma máquina automatizada.
 
+
+
 # What sets this project apart?
   - Premissa única de gameplay: Combina a profissão de alpinista industrial com a sobrevivência vertical em um ambiente cyberpunk.
   - Crítica social integrada ao loop de jogo: A pontuação não reflete apenas "pontos", mas a avaliação de desempenho corporativo do trabalhador para não ser substituído.
-
-
-
-
 
 
 ## Core Gameplay Mechanics (Detailed)
@@ -115,17 +72,22 @@ A narrativa implícita reflete o tema do trabalhador descartável. No topo da te
   - Power-Ups Pré-Partida (Monetização)
     - Details: Itens consumíveis adquiridos ou equipados antes do início do turno de trabalho que conferem vantagens temporárias ou passivas durante a subida.
     - How it works: Através da loja interna, o jogador pode adquirir itens
+
+
+
+
 # Story and Gameplay
 
 ## Story (Brief)
 
-[The Summary or TL;DR version of below]
+Em New Tokyo (233 d.IA), a automação substituiu 99% da mão de obra humana. Você é um dos poucos remanescentes trabalhando na manutenção do arranha-céu "Apex-01". Em um sistema que exige performance absoluta, você deve limpar e reparar a fachada do prédio sob fogo cruzado para manter sua pontuação acima da média e evitar ser demitido e jogado na miséria.
 
 ## Story (Detailed)
 
-[Go into as much detail as needs be]
-[Spare no detail]
-[Use Mind Mapping software to get your point across]
+Após a Grande Singularidade no ano 0 d.IA, a humanidade foi gradualmente afastada de cargos executivos e técnicos, restando apenas funções insalubres onde o custo de manutenção de robôs é maior que o valor da vida humana. Em 233 d.IA, a megacorporação Neo-Apex mantém o edifício mais alto do planeta em New Tokyo.
+
+O protagonista é um alpinista industrial contratado por uma terceirizada sub-paga. Seu trabalho diário é manter a fachada impecável para a elite que vive nos andares superiores, totalmente alienada da violência urbana que ocorre lá embaixo. Projéteis perdidos de guerras territoriais entre gangues, drones desgovernados e rajadas de vento extremo são ameaças constantes. No entanto, a maior ameaça é o próprio sistema de avaliação: um algoritmo implacável monitora cada segundo do turno. Se a taxa de limpeza cair ou o tempo de reparo for alto, o contrato é rescindido imediatamente e outro humano desempregado assume o lugar.
+
 
 ## Gameplay (Brief)
 
