@@ -95,7 +95,7 @@ Um jogo arcade de sobrevivência e ação em ritmo acelerado onde você controla
 
 ## Gameplay (Detailed)
 
-O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu. O prédio é gerado proceduralmente à medida que a partida progride ou conforme o jogador se desloca verticalmente e horizontalmente.
+O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu.
 
   - Fluxo da Partida: O jogador inicia no topo ou na base de uma seção. O tempo começa a contar e a pontuação cai gradualmente se o jogador ficar inativo.
 
@@ -109,10 +109,10 @@ O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu. O prédio
 
 ## 2D
   - Textures
-    - Environment Textures
-  - Heightmap data (If applicable)
-    - List required data required - Example: DEM data of the entire UK.
-  - Etc.
+    - Texturas de vidros (Limpo, Sujo nível 1, Sujo nível 2, Trincado, Quebrado).
+    - Molduras e vigas metálicas futuristas para a estrutura do edifício.
+    - Texturas de fundo (Skyline de New Tokyo com névoa neon, chuva sintética e luzes).
+    - Sprite/UI de interface (Métricas corporativas, barra de vida, pontuação, botões de loja).
 
 ## 3D
   - Characters List
