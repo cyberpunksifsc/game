@@ -91,7 +91,7 @@ O protagonista é um alpinista industrial contratado por uma terceirizada sub-pa
 
 ## Gameplay (Brief)
 
-[The Summary version of below]
+Um jogo arcade de sobrevivência e ação em ritmo acelerado onde você controla um alpinista suspenso por cordas na fachada de um prédio infinito. Limpe janelas, faça reparos, evite tiros e drones usando física de estilingue para alcançar a maior pontuação possível antes de falhar.
 
 ## Gameplay (Detailed)
 
