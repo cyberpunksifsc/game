@@ -185,23 +185,26 @@ O jogo se passa em uma perspectiva 2D/2.5D da fachada do arranha-céu.
    
 
 # Schedule
-  - <Object #1>
-    - Time Scale
-      - Milestone 1
-      - Milestone 2
-      - Etc.
-  - <Object #2>
-    - Time Scale
-      - Milestone 1
-      - Milestone 2
-      - Etc.
-  - <Object #3>
-    - Time Scale
-      - Milestone 1
-      - Milestone 2
-      - Etc.
-  - <Object #4>
-    - Time Scale
-      - Milestone 1
-      - Milestone 2
-      - Etc.
+ 
+* **Sistema de movimento e ancoragem**
+   * Time Scale: Semanas 1-3 (~20h)
+      * Milestone 1: Protótipo da arma de gancho (mirar, plantar âncora, recolher)
+      * Milestone 2: Física de corda/pêndulo na âncora ativa
+      * Milestone 3: Mecânica de salto + link entre âncoras, com queda fatal se sem alinhamento
+* **Fachada, limpeza e pontuação**
+   * Time Scale: Semanas 4-7 (~28h)
+      * Milestone 1: Geração procedural da coluna de janelas (estados: limpo / sujo)
+      * Milestone 2: Ação de limpeza/conserto com timer interrompível (1.5s / 3.5s, botão único contextual)
+      * Milestone 3: Sistema de pontuação e barra de Eficiência Corporativa (queda por tempo/inatividade)
+* **Ameaças e sobrevivência**
+   * Time Scale: Semanas 8-9 (~15h)
+      * Milestone 1: Balas perdidas (spawn, trajetória, colisão)
+      * Milestone 2: Sistema de HP separado da barra corporativa, com interrupção de ação ao ser atingido
+      * Milestone 3 (stretch, se sobrar tempo): Drone de patrulha com padrão de rota simples
+* **Áudio, UI e polimento**
+   * Time Scale: Semanas 10-12 (~33h)
+      * Milestone 1: Efeitos sonoros chiptune (ancoragem, limpeza, impacto, alerta de vida/eficiência)
+      * Milestone 2: HUD com métricas corporativas, pontuação e vida
+      * Milestone 3: Testes, ajuste de dificuldade (curva de spawn de balas), correção de bugs
+      * Milestone 4 (stretch, se sobrar tempo): Power-ups com efeito de gameplay (sem sistema de pagamento real ainda)
+
