@@ -1,34 +1,37 @@
 import pyxel
-
+from constants import STATE_MAIN_MENU, STATE_GAMEPLAY
+from main_menu import MainMenu
+from gameplay import Gameplay
 
 class App:
 
   def __init__(self):
+    self.state = STATE_MAIN_MENU
     self.HEIGHT = 256
     self.WIDTH = 256
     pyxel.init(self.WIDTH, self.HEIGHT, "Game")
 
+    self.main_menu = MainMenu(self)
+    self.gameplay = Gameplay(self)
+
     self.player = 0
-    self.carregar_recursos()
 
     pyxel.run(self.update, self.draw)
 
-  def carregar_recursos(self):
-    pyxel.images[0].load(0, 0, "../assets/BackGround/city1/6.png")
-
   def update(self):
-    pass
+    new_state = None
+
+    if self.state == STATE_MAIN_MENU:
+      new_state = self.main_menu.update()
+    elif self.state == STATE_GAMEPLAY:
+      new_state = self.gameplay.update()
 
   def draw(self):
     pyxel.cls(0)
 
-    pyxel.camera(0, 0)
-
-    pyxel.blt(0, 0, 0, 0, 0, self.WIDTH, self.HEIGHT, 0)
-
-    pyxel.text(self.WIDTH / 2 - 10, self.HEIGHT / 2, "Teste", 7)
-
-    pyxel.text(self.WIDTH/2 - 28, self.HEIGHT/2 + 10, "Start the Game", 7)
-
+    if self.state == STATE_MAIN_MENU:
+      self.main_menu.draw()
+    if self.state == STATE_GAMEPLAY:
+      self.gameplay.draw()
 
 App()
