@@ -7,13 +7,14 @@ class MainMenu:
         self.carregar_recursos()
 
     def carregar_recursos(self):
-        pyxel.images[0].load(0, 0, "../assets/BackGround/city1/6.png")
-        pyxel.images[1].load(0, 256, "../assets/BackGround/city1/6.png")
+        pyxel.images[0].load(0, 0, "../assets/BackGround/city1/6_top.png")
+        pyxel.images[1].load(0, 0, "../assets/BackGround/city1/6_bottom.png")
 
     def update(self):
         if pyxel.btnp(pyxel.KEY_Q):
-            self.app.state = STATE_GAMEPLAY
-
+            return STATE_GAMEPLAY
+        return None
+    
     def draw(self):
         pyxel.camera(0, 0)
 

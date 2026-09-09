@@ -19,13 +19,17 @@ class App:
     pyxel.run(self.update, self.draw)
 
   def update(self):
-    new_state = None
-
     if self.state == STATE_MAIN_MENU:
-      new_state = self.main_menu.update()
+        new_state = self.main_menu.update()
     elif self.state == STATE_GAMEPLAY:
-      new_state = self.gameplay.update()
+        new_state = self.gameplay.update()
+    else:
+        new_state = None
 
+    if new_state is not None and new_state != self.state:
+        self.state = new_state
+        if new_state == STATE_GAMEPLAY:
+            self.gameplay.enter()
   def draw(self):
     pyxel.cls(0)
 
