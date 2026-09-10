@@ -6,10 +6,16 @@ from gameplay import Gameplay
 class App:
 
   def __init__(self):
+
+
     self.state = STATE_MAIN_MENU
-    self.HEIGHT = 256
-    self.WIDTH = 256
+    self.HEIGHT = 180
+    self.WIDTH = 320
+    self.MOUSE_CONFIG = True
+
+
     pyxel.init(self.WIDTH, self.HEIGHT, "Game")
+    pyxel.mouse(self.MOUSE_CONFIG)
 
     self.main_menu = MainMenu(self)
     self.gameplay = Gameplay(self)
