@@ -1,13 +1,24 @@
+from pathlib import Path
 import pyxel
 from constants import STATE_MAIN_MENU, STATE_GAMEPLAY
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 class MainMenu:
     def __init__(self, app):
         self.app = app
         self.carregar_recursos()
 
+    def enter(self):
+        self.carregar_recursos()
+
     def carregar_recursos(self):
-        pyxel.images[0].load(0, 0, "../resources.pyxres")
+        bg_left = ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_left.png"
+        bg_right = ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_right.png"
+        if bg_left.exists():
+            pyxel.images[0].load(0, 0, str(bg_left))
+        if bg_right.exists():
+            pyxel.images[1].load(0, 0, str(bg_right))
         
     def update(self):
         if pyxel.btnp(pyxel.KEY_Q):

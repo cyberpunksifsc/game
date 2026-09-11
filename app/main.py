@@ -1,7 +1,10 @@
+from pathlib import Path
 import pyxel
 from constants import STATE_MAIN_MENU, STATE_GAMEPLAY
 from main_menu import MainMenu
 from gameplay import Gameplay
+
+BASE_DIR = Path(__file__).resolve().parent
 
 class App:
 
@@ -36,6 +39,8 @@ class App:
         self.state = new_state
         if new_state == STATE_GAMEPLAY:
             self.gameplay.enter()
+        elif new_state == STATE_MAIN_MENU:
+            self.main_menu.enter()
   def draw(self):
     pyxel.cls(0)
 
