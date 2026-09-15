@@ -23,7 +23,7 @@ class App:
     self.main_menu = MainMenu(self)
     self.gameplay = Gameplay(self)
 
-    self.player = 0
+    self.player = self.gameplay.player
 
     pyxel.run(self.update, self.draw)
 

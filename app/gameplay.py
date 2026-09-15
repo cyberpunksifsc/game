@@ -1,5 +1,6 @@
 from pathlib import Path
 import pyxel
+from player import Player
 
 STATE_PLAYING = "PLAYING"  # renomeado pra não colidir mentalmente com o STATE_GAMEPLAY do app
 BASE_DIR = Path(__file__).resolve().parent
@@ -9,6 +10,7 @@ class Gameplay:
     def __init__(self, app):
         self.app = app
         self.camera_y = 0
+        self.player = Player(self.app)
 
         print(self.app.WIDTH)
         print(self.app.HEIGHT)
@@ -27,10 +29,15 @@ class Gameplay:
         if bg_image.exists():
             pyxel.images[1].load(0, 0, str(bg_image))
 
+        # Carrega o spritesheet do personagem no banco 2
+        self.player.carregar_recursos()
+
     def update(self):
-        pass
+        self.player.update()
 
     def draw(self):
         pyxel.cls(0)
         pyxel.camera(0, 0)
         pyxel.bltm(0, 0, 0, 0, 0, self.app.WIDTH, self.app.HEIGHT)
+        self.player.draw()
+
