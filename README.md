@@ -15,6 +15,15 @@ Em uma cidade desigual e considerada por muitos a mais cyberpunk, você (protago
 
 Como empregado, seu objetivo é realizar a maior pontuação possível, já que na cidade que nunca dorme, substituições de empregados fazem parte do sistema, você é somente mais uma engrenagem substituivel até o dia da sua inadimplência.
 
+# Como rodar
+
+python -m venv venv
+
+source venv/bin/activate
+
+pip install -r requirements.txt
+
+python ./main.py
 
 
 # Referências
@@ -24,9 +33,6 @@ Como empregado, seu objetivo é realizar a maior pontuação possível, já que 
 [Blade Runner](https://pt.wikipedia.org/wiki/Blade_Runner)
 
 [Make Small Games](https://abagames.github.io/joys-of-small-game-development-en/fun_to_make_small_games.html)
-
-
-
 
 
 
