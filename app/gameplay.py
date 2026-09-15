@@ -19,6 +19,7 @@ class Gameplay:
         """Chamado toda vez que o app entra no estado GAMEPLAY."""
         self.camera_y = 0
         self.carregar_recursos()
+        self.player.anchor_system.reset()
 
     def carregar_recursos(self):
         resource_file = BASE_DIR / "resources.pyxres"
