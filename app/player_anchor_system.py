@@ -125,6 +125,8 @@ class PlayerAnchorSystem:
         self.vy = 0.0
         self.source_anchor = None
         self.source_anchor_y = self.initial_anchor_y
+        self.camera_x = 0.0
+        self.camera_y = 0.0
 
         self.action = "IDLE"
         self.feedback_msg = ""
@@ -285,8 +287,11 @@ class PlayerAnchorSystem:
             self.set_feedback("FALHA DE LINK: SEM ALINHAMENTO Y!", 45, 8)
             return False
 
-    def update(self, screen_height=180):
+    def update(self, camera_x: float = 0.0, camera_y: float = 0.0, screen_height: float = 180.0):
         """Atualiza a simulação física do jogador e o gerenciador de âncoras."""
+        self.camera_x = camera_x
+        self.camera_y = camera_y
+
         for a in self.anchors:
             a.update()
 
@@ -294,14 +299,14 @@ class PlayerAnchorSystem:
             self.feedback_timer -= 1
 
         if self.state == STATE_ANCHORED:
-            self._update_anchored()
+            self._update_anchored(camera_x, camera_y)
         elif self.state == STATE_AIRBORNE:
-            self._update_airborne(screen_height)
+            self._update_airborne(camera_x, camera_y, screen_height)
         elif self.state == STATE_FATAL_FALL:
             if pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE):
                 self.reset()
 
-    def _update_anchored(self):
+    def _update_anchored(self, camera_x: float = 0.0, camera_y: float = 0.0):
         active = self.get_active_anchor()
         if not active:
             # Se não houver âncora ativa, entra em queda livre
@@ -364,15 +369,19 @@ class PlayerAnchorSystem:
         if pyxel.btnp(pyxel.KEY_SPACE):
             self.jump()
 
+        # Coordenadas do mouse no espaço de mundo
+        world_mouse_x = camera_x + pyxel.mouse_x
+        world_mouse_y = camera_y + pyxel.mouse_y
+
         # 5. Ação de plantar âncora (Mouse Esq)
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-            self.plant_anchor(pyxel.mouse_x, pyxel.mouse_y)
+            self.plant_anchor(world_mouse_x, world_mouse_y)
 
         # 6. Ação de recolher âncora (Mouse Dir ou R)
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT) or pyxel.btnp(pyxel.KEY_R):
-            self.retrieve_anchor(pyxel.mouse_x, pyxel.mouse_y)
+            self.retrieve_anchor(world_mouse_x, world_mouse_y)
 
-    def _update_airborne(self, screen_height):
+    def _update_airborne(self, camera_x: float = 0.0, camera_y: float = 0.0, screen_height: float = 180.0):
         self.action = "AIRBORNE"
 
         # Gravidade linear e resistência do ar
@@ -388,12 +397,15 @@ class PlayerAnchorSystem:
         self.x += self.vx
         self.y += self.vy
 
+        world_mouse_x = camera_x + pyxel.mouse_x
+        world_mouse_y = camera_y + pyxel.mouse_y
+
         # Tentativa de Link no ar (ESPAÇO, E ou Clique do mouse)
         if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_E) or pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-            self.try_link(pyxel.mouse_x, pyxel.mouse_y)
+            self.try_link(world_mouse_x, world_mouse_y)
 
-        # Condição de Queda Fatal
-        if self.y > screen_height + 15:
+        # Condição de Queda Fatal (caiu abaixo do limite visível da tela)
+        if self.y > camera_y + screen_height + 35:
             self.state = STATE_FATAL_FALL
             self.play_sound(5)
             self.set_feedback("CONTRATO RESCINDIDO: QUEDA FATAL", 9999, 8)

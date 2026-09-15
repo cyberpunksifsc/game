@@ -84,7 +84,7 @@ class Player:
         if swing_sheet_path.exists():
             pyxel.images[2].load(0, 160, str(swing_sheet_path))
 
-    def update(self):
+    def update(self, camera_x: float = 0.0, camera_y: float = 0.0):
         """Atualiza a simulação física, inputs e animações."""
         self.anim_timer += 1
 
@@ -92,8 +92,8 @@ class Player:
         if pyxel.btnp(pyxel.KEY_H):
             self.show_controls_help = not self.show_controls_help
 
-        # Atualiza a física de ancoragem, salto e links
-        self.anchor_system.update(screen_height=self.app.HEIGHT)
+        # Atualiza a física de ancoragem, salto e links com a câmera
+        self.anchor_system.update(camera_x=camera_x, camera_y=camera_y, screen_height=self.app.HEIGHT)
 
         # Seleciona linha do spritesheet e frames com base na ação do sistema
         action = self.anchor_system.action
@@ -142,30 +142,32 @@ class Player:
         # Mosquetão metálico no arnês
         pyxel.pset(hx, hy, 6)
 
-    def draw_crosshair_and_aim(self):
+    def draw_crosshair_and_aim(self, camera_x: float = 0.0, camera_y: float = 0.0):
         """Desenha a mira da arma de gancho no mouse e linha de alcance."""
         if self.anchor_system.state != STATE_ANCHORED:
             return
 
-        mx, my = pyxel.mouse_x, pyxel.mouse_y
+        world_mouse_x = camera_x + pyxel.mouse_x
+        world_mouse_y = camera_y + pyxel.mouse_y
         hx, hy = self.anchor_system.get_harness_pos()
-        dist = math.hypot(mx - hx, my - hy)
+        dist = math.hypot(world_mouse_x - hx, world_mouse_y - hy)
         can_plant = (len(self.anchor_system.anchors) < MAX_ANCHORS) and (dist <= MAX_PLANT_RANGE)
 
         # Cor da mira: 11 (verde néon) se puder plantar, 8 (vermelho) se bloqueado/fora de alcance
         color = 11 if can_plant else 8
 
-        # Linha pontilhada sutil da mira laser
+        # Linha pontilhada sutil da mira laser em coordenadas de mundo
         if dist > 10:
             steps = int(dist / 6)
             for i in range(1, steps):
                 t = i / steps
-                lx = int(hx + (mx - hx) * t)
-                ly = int(hy + (my - hy) * t)
+                lx = int(hx + (world_mouse_x - hx) * t)
+                ly = int(hy + (world_mouse_y - hy) * t)
                 if i % 2 == 0:
                     pyxel.pset(lx, ly, 12 if can_plant else 8)
 
-        # Retículo da mira no cursor do mouse
+        # Retículo da mira no cursor do mouse em coordenadas de mundo
+        mx, my = int(world_mouse_x), int(world_mouse_y)
         pyxel.line(mx - 4, my, mx + 4, my, color)
         pyxel.line(mx, my - 4, mx, my + 4, color)
         pyxel.circb(mx, my, 3, color)
@@ -231,16 +233,20 @@ class Player:
             help_y = self.app.HEIGHT - 10
             pyxel.text(4, help_y, "[A/D]Balanco [W/S]Cabo [Espaco]Salto/Link [M.Esq]Plantar [M.Dir/R]Recolher", 6)
 
-    def draw(self):
+    def draw(self, camera_x: float = None, camera_y: float = None):
         """Renderiza corda, âncoras, mira, sprite do alpinista e HUD."""
-        # 1. Âncoras e mira no fundo
-        self.draw_anchors()
-        self.draw_crosshair_and_aim()
+        if camera_x is None:
+            camera_x = self.anchor_system.camera_x
+        if camera_y is None:
+            camera_y = self.anchor_system.camera_y
 
-        # 2. Corda conectada
+        # 1. Elementos em coordenadas de mundo (ativa a câmera do Pyxel)
+        pyxel.camera(int(camera_x), int(camera_y))
+        self.draw_anchors()
+        self.draw_crosshair_and_aim(camera_x, camera_y)
         self.draw_cable()
 
-        # 3. Sprite do Alpinista
+        # Sprite do Alpinista
         px = int(self.anchor_system.x)
         py = int(self.anchor_system.y)
 
@@ -256,5 +262,6 @@ class Player:
                 v = self.anim_row * 32
                 pyxel.blt(px, py, 2, u, v, 32, 32, 0)
 
-        # 4. HUD e Feedback
+        # 2. Interface HUD (fixa na tela com câmera resetada em (0, 0))
+        pyxel.camera(0, 0)
         self.draw_hud()
