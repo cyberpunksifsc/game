@@ -31,7 +31,7 @@ class MainMenu:
         pyxel.blt(0, 0, 0, 0, 0, 256, 180)
         pyxel.blt(256, 0, 1, 0, 0, 64, 180)
         
-        pyxel.text(self.app.WIDTH / 2 - 10, self.app.HEIGHT / 2, "Teste", 7)
+        pyxel.text(self.app.WIDTH / 2 - 26, self.app.HEIGHT / 2, "Apex Grappler", 7)
     
         pyxel.text(self.app.WIDTH/2 - 28, self.app.HEIGHT/2 + 10, "Start the Game", 7)
         
