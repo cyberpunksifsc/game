@@ -4,10 +4,15 @@ import pyxel
 # Constantes do Sistema de Ancoragem (conforme GDD)
 MAX_ANCHORS = 3
 MAX_PLANT_RANGE = 145.0       # Alcance máximo para disparar nova âncora
-MAX_LINK_RANGE = 140.0        # Alcance máximo para conexão no ar
-Y_ALIGN_TOLERANCE = 28.0      # Tolerância para considerar âncoras no mesmo eixo Y
 MIN_ROPE_LENGTH = 28.0        # Comprimento mínimo da corda (subir)
 MAX_ROPE_LENGTH = 130.0       # Comprimento máximo da corda (descer)
+
+# Regras de Atracamento / Link no ar:
+# Menos livre horizontalmente (player deve estar na coluna do apoio)
+# Mais livre verticalmente (faixa vertical ampla de suspensão abaixo do apoio)
+LINK_X_TOLERANCE = 55.0       # Tolerância horizontal (+/- pixels em relação ao eixo X do apoio)
+LINK_Y_MIN = 15.0             # Distância vertical mínima abaixo do apoio
+LINK_Y_MAX = 145.0            # Distância vertical máxima abaixo do apoio (alcance do cabo)
 
 # Estados do Jogador
 STATE_ANCHORED = "ANCHORED"   # Conectado à corda ativa
@@ -27,7 +32,7 @@ class Anchor:
     def update(self):
         self.pulse_timer = (self.pulse_timer + 1) % 60
 
-    def draw(self, is_link_candidate: bool = False):
+    def draw(self, is_link_candidate: bool = False, show_guide_beam: bool = False):
         ax = int(self.x)
         ay = int(self.y)
 
@@ -41,7 +46,7 @@ class Anchor:
 
         # LED Indicador de status:
         # - Ativa: Verde néon (11)
-        # - Candidata a link (alinhada no eixo Y e no alcance): Ciano pulsante (12 / 7)
+        # - Candidata a link: Ciano pulsante (12 / 7)
         # - Inativa à espera: Laranja néon (9)
         if self.is_active:
             led_color = 11
@@ -54,6 +59,12 @@ class Anchor:
 
         # Argola/mosquetão onde a corda engata
         pyxel.pset(ax, ay + 2, 6)
+
+        # Feixe guia holográfico da coluna vertical quando o player está no ar
+        if not self.is_active and show_guide_beam:
+            beam_color = 12 if is_link_candidate else 5
+            for gy in range(ay + int(LINK_Y_MIN), ay + int(LINK_Y_MAX), 8):
+                pyxel.pset(ax, gy, beam_color)
 
         # Se for candidata a link no ar ou pronta para salto, exibe retículo holográfico
         if is_link_candidate:
@@ -148,9 +159,9 @@ class PlayerAnchorSystem:
         return (self.x + self.harness_offset_x, self.y + self.harness_offset_y)
 
     def find_link_candidate(self, cursor_x: float = None, cursor_y: float = None) -> Anchor | None:
-        """Encontra outra âncora plantada que esteja alinhada no mesmo eixo Y
+        """Encontra uma âncora inativa plantada onde o jogador, durante o salto,
 
-        e dentro do alcance do salto/link (excluindo a âncora de origem do salto).
+        possui o alinhamento vertical com o apoio (coluna horizontal do apoio e faixa Y de suspensão).
         """
         hx, hy = self.get_harness_pos()
         best_anchor = None
@@ -161,24 +172,25 @@ class PlayerAnchorSystem:
             if a.is_active or (self.state == STATE_AIRBORNE and a == self.source_anchor):
                 continue
 
-            # Verificação de alinhamento vertical no eixo Y
-            # O salto deve ocorrer entre pontos na mesma linha estrutural (viga da fachada)
-            y_diff = abs(a.y - self.source_anchor_y)
-            if y_diff > Y_ALIGN_TOLERANCE:
+            # 1. Alinhamento horizontal com a coluna do apoio (menos livre horizontalmente)
+            dx = abs(hx - a.x)
+            if dx > LINK_X_TOLERANCE:
                 continue
 
-            # Se o jogador estiver mirando com o cursor, prioriza a âncora apontada
+            # 2. Faixa vertical Y abaixo do apoio (mais livre verticalmente, dentro do alcance do cabo)
+            dy = hy - a.y
+            if dy < LINK_Y_MIN or dy > LINK_Y_MAX:
+                continue
+
+            # Se estiver na área válida, seleciona o apoio (priorizando mira do cursor se informada)
             if cursor_x is not None and cursor_y is not None:
-                dist_cursor = math.hypot(cursor_x - a.x, cursor_y - a.y)
-                dist_player = math.hypot(hx - a.x, hy - a.y)
-                if dist_player <= MAX_LINK_RANGE and dist_cursor < best_dist:
-                    best_dist = dist_cursor
-                    best_anchor = a
+                dist = math.hypot(cursor_x - a.x, cursor_y - a.y)
             else:
-                dist = math.hypot(hx - a.x, hy - a.y)
-                if dist <= MAX_LINK_RANGE and dist < best_dist:
-                    best_dist = dist
-                    best_anchor = a
+                dist = math.hypot(dx, dy)
+
+            if dist < best_dist:
+                best_dist = dist
+                best_anchor = a
 
         return best_anchor
 
@@ -282,9 +294,24 @@ class PlayerAnchorSystem:
             self.set_feedback("LINK COM SUCESSO!", 45, 11)
             return True
         else:
-            # Falha de link
+            # Falha de link com feedback contextual
             self.play_sound(4)
-            self.set_feedback("FALHA DE LINK: SEM ALINHAMENTO Y!", 45, 8)
+            hx, hy = self.get_harness_pos()
+            inactives = [a for a in self.anchors if not a.is_active and a != self.source_anchor]
+            if not inactives:
+                self.set_feedback("NENHUM APOIO PLANTADO!", 45, 8)
+            else:
+                nearest = min(inactives, key=lambda a: math.hypot(hx - a.x, hy - a.y))
+                dx = abs(hx - nearest.x)
+                dy = hy - nearest.y
+                if dx > LINK_X_TOLERANCE:
+                    self.set_feedback("FORA DA COLUNA DO APOIO!", 45, 8)
+                elif dy < LINK_Y_MIN:
+                    self.set_feedback("MUITO ALTO P/ ATRACAR!", 45, 8)
+                elif dy > LINK_Y_MAX:
+                    self.set_feedback("MUITO BAIXO P/ ATRACAR!", 45, 8)
+                else:
+                    self.set_feedback("SEM ALINHAMENTO COM O APOIO!", 45, 8)
             return False
 
     def update(self, camera_x: float = 0.0, camera_y: float = 0.0, screen_height: float = 180.0):

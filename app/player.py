@@ -118,13 +118,16 @@ class Player:
             self.anim_row = 0
             self.current_frame = (self.anim_timer // 8) % 4
 
-    def draw_anchors(self):
+    def draw_anchors(self, camera_x: float = 0.0, camera_y: float = 0.0):
         """Desenha todas as âncoras na fachada e destaca possíveis alvos de link."""
-        link_target = self.anchor_system.find_link_candidate()
+        world_mouse_x = camera_x + pyxel.mouse_x
+        world_mouse_y = camera_y + pyxel.mouse_y
+        link_target = self.anchor_system.find_link_candidate(world_mouse_x, world_mouse_y)
+        is_airborne = (self.anchor_system.state == STATE_AIRBORNE)
 
         for a in self.anchor_system.anchors:
             is_candidate = (a == link_target)
-            a.draw(is_link_candidate=is_candidate)
+            a.draw(is_link_candidate=is_candidate, show_guide_beam=is_airborne)
 
     def draw_cable(self):
         """Desenha a corda de aço sob tensão se o jogador estiver ancorado."""
@@ -242,7 +245,7 @@ class Player:
 
         # 1. Elementos em coordenadas de mundo (ativa a câmera do Pyxel)
         pyxel.camera(int(camera_x), int(camera_y))
-        self.draw_anchors()
+        self.draw_anchors(camera_x, camera_y)
         self.draw_crosshair_and_aim(camera_x, camera_y)
         self.draw_cable()
 
