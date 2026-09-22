@@ -5,14 +5,14 @@ import pyxel
 MAX_ANCHORS = 3
 MAX_PLANT_RANGE = 145.0       # Alcance máximo para disparar nova âncora
 MIN_ROPE_LENGTH = 28.0        # Comprimento mínimo da corda (subir)
-MAX_ROPE_LENGTH = 130.0       # Comprimento máximo da corda (descer)
+MAX_ROPE_LENGTH = 82.0       # Comprimento máximo da corda (descer)
 
 # Regras de Atracamento / Link no ar:
 # Menos livre horizontalmente (player deve estar na coluna do apoio)
 # Mais livre verticalmente (faixa vertical ampla de suspensão abaixo do apoio)
 LINK_X_TOLERANCE = 55.0       # Tolerância horizontal (+/- pixels em relação ao eixo X do apoio)
 LINK_Y_MIN = 15.0             # Distância vertical mínima abaixo do apoio
-LINK_Y_MAX = 145.0            # Distância vertical máxima abaixo do apoio (alcance do cabo)
+LINK_Y_MAX = 75.0            # Distância vertical máxima abaixo do apoio (alcance do cabo)
 
 # Estados do Jogador
 STATE_ANCHORED = "ANCHORED"   # Conectado à corda ativa
