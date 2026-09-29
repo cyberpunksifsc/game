@@ -17,7 +17,7 @@ ROOT_DIR = BASE_DIR.parent
 class Player:
     """Controlador do personagem integrado ao sistema de movimentação e ancoragem do GDD."""
 
-    def __init__(self, app, anchor_x=160, anchor_y=25, rope_length=65):
+    def __init__(self, app, anchor_x=160, anchor_y=1800, rope_length=50):
         self.app = app
 
         # Sistema de Ancoragem e Física (conforme especificação do GDD)
@@ -234,7 +234,7 @@ class Player:
         # 5. Dicas de Controles (alternável com tecla H)
         if self.show_controls_help and self.anchor_system.state != STATE_FATAL_FALL:
             help_y = self.app.HEIGHT - 10
-            pyxel.text(4, help_y, "[A/D]Balanco [W/S]Cabo [Espaco]Salto/Link [M.Esq]Plantar [M.Dir/R]Recolher", 6)
+            pyxel.text(4, help_y, "[A/D]Balanco [W/S]Cabo [E]Limpar/Consertar [Espaco]Salto/Link [M.Esq]Plantar [R]Recolher", 6)
 
     def draw(self, camera_x: float = None, camera_y: float = None):
         """Renderiza corda, âncoras, mira, sprite do alpinista e HUD."""

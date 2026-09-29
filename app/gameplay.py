@@ -1,17 +1,28 @@
 from pathlib import Path
 import pyxel
 from player import Player
+from building_generator import BuildingGenerator
+from player_cleaning_system import PlayerCleaningSystem
 
-STATE_PLAYING = "PLAYING"  # renomeado pra não colidir mentalmente com o STATE_GAMEPLAY do app
+STATE_PLAYING = "PLAYING"
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
+
 
 class Gameplay:
     def __init__(self, app):
         self.app = app
         self.camera_x = 0.0
         self.camera_y = 0.0
-        self.player = Player(self.app)
+
+        # Gerador da fachada do arranha-céu Apex-01
+        self.building = BuildingGenerator()
+
+        # Jogador inicia na base térrea (meio da base: x=160, y=1800)
+        self.player = Player(self.app, anchor_x=160, anchor_y=1800, rope_length=50)
+
+        # Sistema de limpeza e conserto de janelas (acionado com [E])
+        self.cleaning_system = PlayerCleaningSystem(self.player, self.building)
 
     def enter(self):
         """Chamado toda vez que o app entra no estado GAMEPLAY."""
@@ -38,6 +49,12 @@ class Gameplay:
 
     def update(self):
         was_fatal = (self.player.state == "FATAL_FALL")
+
+        # Atualiza o sistema de limpeza e reparo de janelas
+        self.cleaning_system.update()
+
+        # Estabiliza o alpinista se estiver ativamente limpando/reparando
+        self.player.anchor_system.is_working = self.cleaning_system.is_cleaning
 
         # Atualiza a movimentação e âncoras considerando a posição atual da câmera
         self.player.update(self.camera_x, self.camera_y)
@@ -73,11 +90,16 @@ class Gameplay:
         # 1. Fundo da cidade com paralaxe
         self.draw_background()
 
-        # 2. Fachada do prédio / Tilemap (em coordenadas de mundo)
+        # 2. Fachada do prédio com vigas, janelas e base (coordenadas de mundo)
         pyxel.camera(int(self.camera_x), int(self.camera_y))
-        pyxel.bltm(0, 0, 0, 0, 0, 2048, 2048, 0)
+        self.building.draw(self.camera_x, self.camera_y, target_window=self.cleaning_system.target_window)
 
-        # 3. Jogador, âncoras, mira e HUD
+        # 3. Partículas e feixes de limpeza/solda
+        self.cleaning_system.draw_world(self.camera_x, self.camera_y)
+
+        # 4. Jogador, âncoras, mira e HUD de movimentação
         self.player.draw(self.camera_x, self.camera_y)
 
-
+        # 5. HUD de limpeza e pontuação corporativa
+        pyxel.camera(0, 0)
+        self.cleaning_system.draw_hud(self.app.WIDTH, self.app.HEIGHT)

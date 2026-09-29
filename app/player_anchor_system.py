@@ -79,10 +79,11 @@ class PlayerAnchorSystem:
     verificação de alinhamento no eixo Y para link e condição de queda fatal.
     """
 
-    def __init__(self, start_anchor_x=160, start_anchor_y=25, initial_rope_length=65):
+    def __init__(self, start_anchor_x=160, start_anchor_y=1800, initial_rope_length=50):
         self.initial_anchor_x = float(start_anchor_x)
         self.initial_anchor_y = float(start_anchor_y)
         self.initial_rope_length = float(initial_rope_length)
+        self.is_working = False
 
         # Configurações de fixação no arnês do personagem (sprite 32x32)
         self.harness_offset_x = 8
@@ -381,6 +382,12 @@ class PlayerAnchorSystem:
             self.sway_timer += 1
             effective_angle += math.sin(self.sway_timer * 0.045) * 0.035
 
+        # Se estiver trabalhando na janela (limpando/consertando com E), estabiliza o alpinista
+        if self.is_working:
+            self.angular_vel *= 0.70
+            self.angle *= 0.85
+            self.action = "WORKING"
+
         # Posição calculada do arnês e do sprite
         hx = active.x + math.sin(effective_angle) * self.rope_length
         hy = active.y + math.cos(effective_angle) * self.rope_length
@@ -393,7 +400,7 @@ class PlayerAnchorSystem:
         self.vy = -tangential * math.sin(effective_angle)
 
         # 4. Salto (ESPAÇO)
-        if pyxel.btnp(pyxel.KEY_SPACE):
+        if pyxel.btnp(pyxel.KEY_SPACE) and not self.is_working:
             self.jump()
 
         # Coordenadas do mouse no espaço de mundo
