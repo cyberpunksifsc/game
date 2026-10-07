@@ -170,24 +170,25 @@ class BuildingGenerator:
             for col_idx, col_x in enumerate(self.column_xs):
                 win_y = floor_y - self.window_h
 
-                # Distribuição contextual dos estados de janela
+                # Distribuição contextual dos estados de janela (quantidade reduzida e equilibrada)
                 if floor == 0:
-                    # Andar 0 (Base inicial do jogador):
-                    # Garante janelas sujas e quebradas próximas ao ponto de spawn para teste imediato
-                    if col_idx == 0:
-                        state = WINDOW_STATE_CLEAN
-                    elif col_idx == 1:
+                    # Andar 0 (Base inicial do jogador): apenas 1 janela suja próxima para teste imediato
+                    if col_idx == 1:
                         state = WINDOW_STATE_DIRTY   # Teste imediato de limpeza com E
-                    elif col_idx == 2:
+                    else:
+                        state = WINDOW_STATE_CLEAN
+                elif floor == 1:
+                    # Andar 1: apenas 1 janela quebrada para teste do reparo
+                    if col_idx == 2:
                         state = WINDOW_STATE_BROKEN  # Teste imediato de reparo com E
                     else:
-                        state = WINDOW_STATE_DIRTY
+                        state = WINDOW_STATE_CLEAN
                 else:
-                    # Andares superiores: distribuição dinâmica
+                    # Andares superiores: distribuição mais esparsa (maioria limpa)
                     roll = rnd.random()
-                    if roll < 0.42:
+                    if roll < 0.12:
                         state = WINDOW_STATE_DIRTY
-                    elif roll < 0.70:
+                    elif roll < 0.18:
                         state = WINDOW_STATE_BROKEN
                     else:
                         state = WINDOW_STATE_CLEAN

@@ -19,6 +19,18 @@ STATE_ANCHORED = "ANCHORED"   # Conectado à corda ativa
 STATE_AIRBORNE = "AIRBORNE"   # Em salto / queda livre após desconexão
 STATE_FATAL_FALL = "FATAL_FALL"  # Game over por queda
 
+# Parâmetros de Balanço e Força de Movimento (mais lento e controlado)
+SWING_FORCE = 0.0016          # Força suave de impulso do alpinista
+MAX_ANGULAR_VEL = 0.038       # Velocidade angular máxima (impede balanços excessivos)
+MAX_SWING_ANGLE = math.radians(78)  # Ângulo máximo (~78°, arco total < 180°, impede giros de 360°)
+
+# Dinâmica de Salto e Desconexão (lançamento mais moderado)
+LAUNCH_SPEED_FACTOR = 0.70    # Redução da velocidade tangencial transferida ao salto
+MAX_LAUNCH_VX = 2.8           # Velocidade horizontal máxima ao saltar
+LAUNCH_UPWARD_IMPULSE = 1.4   # Impulso vertical para cima suavizado
+AIRBORNE_DRAG = 0.985         # Resistência do ar durante o salto
+
+
 
 class Anchor:
     """Representa um ponto de ancoragem fixado na fachada do arranha-céu."""
@@ -246,8 +258,7 @@ class PlayerAnchorSystem:
 
     def jump(self):
         """Executa o salto a partir da corda ativa, desconectando o cabo
-
-        e transferindo o momentum angular para queda livre.
+        e transferindo o momentum angular moderado para queda livre controlada.
         """
         active = self.get_active_anchor()
         if not active or self.state != STATE_ANCHORED:
@@ -258,11 +269,12 @@ class PlayerAnchorSystem:
         active.is_active = False
         self.state = STATE_AIRBORNE
 
-        # Conservação do momento linear tangencial do pêndulo
-        # v_x = omega * L * cos(theta), v_y = -omega * L * sin(theta)
-        tangential_speed = self.angular_vel * self.rope_length
-        self.vx = tangential_speed * math.cos(self.angle)
-        self.vy = -tangential_speed * math.sin(self.angle) - 2.0  # Impulso para cima
+        # Conservação moderada do momento linear tangencial do pêndulo
+        # Aplica LAUNCH_SPEED_FACTOR e teto máximo MAX_LAUNCH_VX para saltos menos velozes
+        tangential_speed = (self.angular_vel * self.rope_length) * LAUNCH_SPEED_FACTOR
+        raw_vx = tangential_speed * math.cos(self.angle)
+        self.vx = max(-MAX_LAUNCH_VX, min(MAX_LAUNCH_VX, raw_vx))
+        self.vy = -tangential_speed * math.sin(self.angle) - LAUNCH_UPWARD_IMPULSE
 
         self.play_sound(2)
         self.set_feedback("SALTO! PRESSIONE [ESPACO] PARA LINK", 60, 10)
@@ -287,9 +299,10 @@ class PlayerAnchorSystem:
             self.rope_length = max(MIN_ROPE_LENGTH, min(MAX_ROPE_LENGTH, dist))
             self.angle = math.atan2(dx, dy)
 
-            # Projeção da velocidade linear no movimento pendular da nova âncora
+            # Projeção da velocidade linear no movimento pendular da nova âncora com atenuação
             tangential_v = self.vx * math.cos(self.angle) - self.vy * math.sin(self.angle)
-            self.angular_vel = tangential_v / self.rope_length
+            new_angular_vel = (tangential_v / self.rope_length) * 0.75
+            self.angular_vel = max(-MAX_ANGULAR_VEL, min(MAX_ANGULAR_VEL, new_angular_vel))
 
             self.play_sound(3)
             self.set_feedback("LINK COM SUCESSO!", 45, 11)
@@ -346,12 +359,13 @@ class PlayerAnchorSystem:
         is_moving_vert = False
 
         # 1. Controles de balanço no pêndulo (A/D ou setas)
-        if pyxel.btn(pyxel.KEY_A) or pyxel.btn(pyxel.KEY_LEFT):
-            self.angular_vel -= 0.004
+        # Força reduzida para balanço mais lento e natural, com bloqueio no limite angular
+        if (pyxel.btn(pyxel.KEY_A) or pyxel.btn(pyxel.KEY_LEFT)) and self.angle > -MAX_SWING_ANGLE:
+            self.angular_vel -= SWING_FORCE
             self.action = "SWING_LEFT"
             is_moving_horiz = True
-        elif pyxel.btn(pyxel.KEY_D) or pyxel.btn(pyxel.KEY_RIGHT):
-            self.angular_vel += 0.004
+        elif (pyxel.btn(pyxel.KEY_D) or pyxel.btn(pyxel.KEY_RIGHT)) and self.angle < MAX_SWING_ANGLE:
+            self.angular_vel += SWING_FORCE
             self.action = "SWING_RIGHT"
             is_moving_horiz = True
 
@@ -367,13 +381,23 @@ class PlayerAnchorSystem:
                 self.action = "CLIMB_DOWN"
             is_moving_vert = True
 
-        # 3. Física de pêndulo simples
+        # 3. Física de pêndulo simples com amortecimento e limites
         # Aceleração da gravidade tangencial
-        gravity_acc = -(0.22 / self.rope_length) * math.sin(self.angle)
+        gravity_acc = -(0.24 / self.rope_length) * math.sin(self.angle)
         self.angular_vel += gravity_acc
-        self.angular_vel *= 0.993  # Amortecimento natural do ar/cabo
-        self.angular_vel = max(-0.085, min(0.085, self.angular_vel))
+        self.angular_vel *= 0.992  # Amortecimento natural do ar/cabo
+        self.angular_vel = max(-MAX_ANGULAR_VEL, min(MAX_ANGULAR_VEL, self.angular_vel))
         self.angle += self.angular_vel
+
+        # Limitação estrita da angulação (impede loops de 360° e mantém arco total < 180°)
+        if self.angle > MAX_SWING_ANGLE:
+            self.angle = MAX_SWING_ANGLE
+            if self.angular_vel > 0:
+                self.angular_vel = 0.0
+        elif self.angle < -MAX_SWING_ANGLE:
+            self.angle = -MAX_SWING_ANGLE
+            if self.angular_vel < 0:
+                self.angular_vel = 0.0
 
         # Se em repouso absoluto sem inputs, aplica micro-balanço atmosférico do Apex-01
         effective_angle = self.angle
@@ -394,9 +418,10 @@ class PlayerAnchorSystem:
         self.x = hx - self.harness_offset_x
         self.y = hy - self.harness_offset_y
 
-        # Mantém velocidade tangencial calculada para salto imediato
-        tangential = self.angular_vel * self.rope_length
-        self.vx = tangential * math.cos(effective_angle)
+        # Mantém velocidade tangencial calculada moderada para salto imediato
+        tangential = (self.angular_vel * self.rope_length) * LAUNCH_SPEED_FACTOR
+        raw_vx = tangential * math.cos(effective_angle)
+        self.vx = max(-MAX_LAUNCH_VX, min(MAX_LAUNCH_VX, raw_vx))
         self.vy = -tangential * math.sin(effective_angle)
 
         # 4. Salto (ESPAÇO)
@@ -418,15 +443,17 @@ class PlayerAnchorSystem:
     def _update_airborne(self, camera_x: float = 0.0, camera_y: float = 0.0, screen_height: float = 180.0):
         self.action = "AIRBORNE"
 
-        # Gravidade linear e resistência do ar
+        # Gravidade linear e resistência do ar moderada
         self.vy += 0.16
-        self.vx *= 0.992
+        self.vx *= AIRBORNE_DRAG
 
         # Controle direcional leve no ar
         if pyxel.btn(pyxel.KEY_A) or pyxel.btn(pyxel.KEY_LEFT):
-            self.vx -= 0.08
+            self.vx -= 0.06
         if pyxel.btn(pyxel.KEY_D) or pyxel.btn(pyxel.KEY_RIGHT):
-            self.vx += 0.08
+            self.vx += 0.06
+
+        self.vx = max(-MAX_LAUNCH_VX, min(MAX_LAUNCH_VX, self.vx))
 
         self.x += self.vx
         self.y += self.vy
