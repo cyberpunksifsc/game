@@ -121,8 +121,12 @@ class PlayerCleaningSystem:
             self.is_cleaning = False
             return
 
-        # 4. Verifica o acionamento contextual da Tecla [E]
-        holding_e = pyxel.btn(pyxel.KEY_E)
+        # 4. Verifica o acionamento contextual da Tecla [E], botão touch LIMPAR ou Gamepad X
+        holding_e = (
+            pyxel.btn(pyxel.KEY_E)
+            or (hasattr(self.player, "touch_controls") and self.player.touch_controls and self.player.touch_controls.btn_clean)
+            or pyxel.btn(pyxel.GAMEPAD1_BUTTON_X)
+        )
 
         if holding_e and self.target_window.state != WINDOW_STATE_CLEAN:
             self.is_cleaning = True
@@ -227,10 +231,10 @@ class PlayerCleaningSystem:
             screen_wy = int(self.target_window.y - self.player.anchor_system.camera_y - 12)
 
             if self.target_window.state == WINDOW_STATE_DIRTY:
-                label = "[E] LIMPAR (1.5s)"
+                label = "[E/LIMPAR] (1.5s)"
                 color = 11
             else:
-                label = "[E] CONSERTAR (3.5s)"
+                label = "[E/LIMPAR] REPARO (3.5s)"
                 color = 10
 
             tw = len(label) * 4

@@ -91,11 +91,12 @@ class PlayerAnchorSystem:
     verificação de alinhamento no eixo Y para link e condição de queda fatal.
     """
 
-    def __init__(self, start_anchor_x=160, start_anchor_y=1800, initial_rope_length=50):
+    def __init__(self, start_anchor_x=160, start_anchor_y=1800, initial_rope_length=50, touch_controls=None):
         self.initial_anchor_x = float(start_anchor_x)
         self.initial_anchor_y = float(start_anchor_y)
         self.initial_rope_length = float(initial_rope_length)
         self.is_working = False
+        self.touch_controls = touch_controls
 
         # Configurações de fixação no arnês do personagem (sprite 32x32)
         self.harness_offset_x = 8
@@ -344,7 +345,16 @@ class PlayerAnchorSystem:
         elif self.state == STATE_AIRBORNE:
             self._update_airborne(camera_x, camera_y, screen_height)
         elif self.state == STATE_FATAL_FALL:
-            if pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.KEY_SPACE):
+            touch_on_ui = self.touch_controls and self.touch_controls.is_touching_ui(pyxel.mouse_x, pyxel.mouse_y)
+            retry_pressed = (
+                pyxel.btnp(pyxel.KEY_R)
+                or pyxel.btnp(pyxel.KEY_SPACE)
+                or (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui)
+                or (self.touch_controls and (self.touch_controls.btnp_jump or self.touch_controls.btnp_retrieve))
+                or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A)
+                or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START)
+            )
+            if retry_pressed:
                 self.reset()
 
     def _update_anchored(self, camera_x: float = 0.0, camera_y: float = 0.0):
@@ -358,24 +368,45 @@ class PlayerAnchorSystem:
         is_moving_horiz = False
         is_moving_vert = False
 
-        # 1. Controles de balanço no pêndulo (A/D ou setas)
-        # Força reduzida para balanço mais lento e natural, com bloqueio no limite angular
-        if (pyxel.btn(pyxel.KEY_A) or pyxel.btn(pyxel.KEY_LEFT)) and self.angle > -MAX_SWING_ANGLE:
+        # 1. Controles de balanço no pêndulo (A/D, setas, D-Pad touch ou gamepad)
+        moving_left = (
+            pyxel.btn(pyxel.KEY_A)
+            or pyxel.btn(pyxel.KEY_LEFT)
+            or (self.touch_controls and self.touch_controls.btn_left)
+        )
+        moving_right = (
+            pyxel.btn(pyxel.KEY_D)
+            or pyxel.btn(pyxel.KEY_RIGHT)
+            or (self.touch_controls and self.touch_controls.btn_right)
+        )
+
+        if moving_left and self.angle > -MAX_SWING_ANGLE:
             self.angular_vel -= SWING_FORCE
             self.action = "SWING_LEFT"
             is_moving_horiz = True
-        elif (pyxel.btn(pyxel.KEY_D) or pyxel.btn(pyxel.KEY_RIGHT)) and self.angle < MAX_SWING_ANGLE:
+        elif moving_right and self.angle < MAX_SWING_ANGLE:
             self.angular_vel += SWING_FORCE
             self.action = "SWING_RIGHT"
             is_moving_horiz = True
 
-        # 2. Controles de subida e descida na corda (W/S ou setas)
-        if pyxel.btn(pyxel.KEY_W) or pyxel.btn(pyxel.KEY_UP):
+        # 2. Controles de subida e descida na corda (W/S, setas, D-Pad touch ou gamepad)
+        moving_up = (
+            pyxel.btn(pyxel.KEY_W)
+            or pyxel.btn(pyxel.KEY_UP)
+            or (self.touch_controls and self.touch_controls.btn_up)
+        )
+        moving_down = (
+            pyxel.btn(pyxel.KEY_S)
+            or pyxel.btn(pyxel.KEY_DOWN)
+            or (self.touch_controls and self.touch_controls.btn_down)
+        )
+
+        if moving_up:
             self.rope_length = max(MIN_ROPE_LENGTH, self.rope_length - 1.2)
             if not is_moving_horiz:
                 self.action = "CLIMB_UP"
             is_moving_vert = True
-        elif pyxel.btn(pyxel.KEY_S) or pyxel.btn(pyxel.KEY_DOWN):
+        elif moving_down:
             self.rope_length = min(MAX_ROPE_LENGTH, self.rope_length + 1.2)
             if not is_moving_horiz:
                 self.action = "CLIMB_DOWN"
@@ -424,20 +455,32 @@ class PlayerAnchorSystem:
         self.vx = max(-MAX_LAUNCH_VX, min(MAX_LAUNCH_VX, raw_vx))
         self.vy = -tangential * math.sin(effective_angle)
 
-        # 4. Salto (ESPAÇO)
-        if pyxel.btnp(pyxel.KEY_SPACE) and not self.is_working:
+        # 4. Salto (ESPAÇO, botão virtual SALTO ou Gamepad A)
+        jump_input = (
+            pyxel.btnp(pyxel.KEY_SPACE)
+            or (self.touch_controls and self.touch_controls.btnp_jump)
+            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A)
+        )
+        if jump_input and not self.is_working:
             self.jump()
 
         # Coordenadas do mouse no espaço de mundo
         world_mouse_x = camera_x + pyxel.mouse_x
         world_mouse_y = camera_y + pyxel.mouse_y
+        touch_on_ui = self.touch_controls and self.touch_controls.is_touching_ui(pyxel.mouse_x, pyxel.mouse_y)
 
-        # 5. Ação de plantar âncora (Mouse Esq)
-        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+        # 5. Ação de plantar âncora (Toque na tela ou Mouse Esq fora dos botões virtuais)
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui:
             self.plant_anchor(world_mouse_x, world_mouse_y)
 
-        # 6. Ação de recolher âncora (Mouse Dir ou R)
-        if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT) or pyxel.btnp(pyxel.KEY_R):
+        # 6. Ação de recolher âncora (Mouse Dir, tecla R, botão touch REC ou Gamepad Y)
+        retrieve_input = (
+            pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT)
+            or pyxel.btnp(pyxel.KEY_R)
+            or (self.touch_controls and self.touch_controls.btnp_retrieve)
+            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_Y)
+        )
+        if retrieve_input:
             self.retrieve_anchor(world_mouse_x, world_mouse_y)
 
     def _update_airborne(self, camera_x: float = 0.0, camera_y: float = 0.0, screen_height: float = 180.0):
@@ -447,10 +490,20 @@ class PlayerAnchorSystem:
         self.vy += 0.16
         self.vx *= AIRBORNE_DRAG
 
-        # Controle direcional leve no ar
-        if pyxel.btn(pyxel.KEY_A) or pyxel.btn(pyxel.KEY_LEFT):
+        # Controle direcional leve no ar (A/D, setas, D-Pad touch ou gamepad)
+        air_left = (
+            pyxel.btn(pyxel.KEY_A)
+            or pyxel.btn(pyxel.KEY_LEFT)
+            or (self.touch_controls and self.touch_controls.btn_left)
+        )
+        air_right = (
+            pyxel.btn(pyxel.KEY_D)
+            or pyxel.btn(pyxel.KEY_RIGHT)
+            or (self.touch_controls and self.touch_controls.btn_right)
+        )
+        if air_left:
             self.vx -= 0.06
-        if pyxel.btn(pyxel.KEY_D) or pyxel.btn(pyxel.KEY_RIGHT):
+        if air_right:
             self.vx += 0.06
 
         self.vx = max(-MAX_LAUNCH_VX, min(MAX_LAUNCH_VX, self.vx))
@@ -460,9 +513,17 @@ class PlayerAnchorSystem:
 
         world_mouse_x = camera_x + pyxel.mouse_x
         world_mouse_y = camera_y + pyxel.mouse_y
+        touch_on_ui = self.touch_controls and self.touch_controls.is_touching_ui(pyxel.mouse_x, pyxel.mouse_y)
 
-        # Tentativa de Link no ar (ESPAÇO, E ou Clique do mouse)
-        if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_E) or pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+        # Tentativa de Link no ar (ESPAÇO, E, botões virtuais SALTO/LIMPAR, Gamepad A, ou toque no apoio)
+        link_input = (
+            pyxel.btnp(pyxel.KEY_SPACE)
+            or pyxel.btnp(pyxel.KEY_E)
+            or (self.touch_controls and (self.touch_controls.btnp_jump or self.touch_controls.btnp_clean))
+            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A)
+            or (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui)
+        )
+        if link_input:
             self.try_link(world_mouse_x, world_mouse_y)
 
         # Condição de Queda Fatal (caiu abaixo do limite visível da tela)

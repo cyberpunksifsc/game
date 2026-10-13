@@ -10,6 +10,8 @@ from player_anchor_system import (
     MAX_PLANT_RANGE,
 )
 
+from touch_controls import TouchControls
+
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
 
@@ -20,11 +22,15 @@ class Player:
     def __init__(self, app, anchor_x=160, anchor_y=1800, rope_length=50):
         self.app = app
 
+        # Controles virtuais de toque na tela (HUD touch) e gamepad para Android/Desktop
+        self.touch_controls = TouchControls(self.app.WIDTH, self.app.HEIGHT)
+
         # Sistema de Ancoragem e Física (conforme especificação do GDD)
         self.anchor_system = PlayerAnchorSystem(
             start_anchor_x=anchor_x,
             start_anchor_y=anchor_y,
             initial_rope_length=rope_length,
+            touch_controls=self.touch_controls,
         )
 
         # Offsets do arnês no sprite 32x32
@@ -87,6 +93,9 @@ class Player:
     def update(self, camera_x: float = 0.0, camera_y: float = 0.0):
         """Atualiza a simulação física, inputs e animações."""
         self.anim_timer += 1
+
+        # Atualiza a leitura dos botões virtuais de toque na tela e gamepads
+        self.touch_controls.update()
 
         # Alterna exibição de ajuda com H
         if pyxel.btnp(pyxel.KEY_H):
@@ -229,12 +238,12 @@ class Player:
 
             pyxel.text(bx + 16, by + 10, "[ RESCISAO DE CONTRATO: QUEDA FATAL ]", 8)
             pyxel.text(bx + 14, by + 22, "O trabalhador falhou ao se ancorar.", 7)
-            pyxel.text(bx + 28, by + 34, "PRESSIONE [R] OU [ESPACO] P/ RETENTAR", 10)
+            pyxel.text(bx + 16, by + 34, "TOQUE NA TELA OU [R]/[ESPACO] P/ RETENTAR", 10)
 
         # 5. Dicas de Controles (alternável com tecla H)
         if self.show_controls_help and self.anchor_system.state != STATE_FATAL_FALL:
             help_y = self.app.HEIGHT - 10
-            pyxel.text(4, help_y, "[A/D]Balanco [W/S]Cabo [E]Limpar/Consertar [Espaco]Salto/Link [M.Esq]Plantar [R]Recolher", 6)
+            pyxel.text(4, help_y, "[A/D]Balanco [W/S]Cabo [E]Limpar [Espaco]Salto [R]Recolher [T]Touch", 6)
 
     def draw(self, camera_x: float = None, camera_y: float = None):
         """Renderiza corda, âncoras, mira, sprite do alpinista e HUD."""
@@ -268,3 +277,4 @@ class Player:
         # 2. Interface HUD (fixa na tela com câmera resetada em (0, 0))
         pyxel.camera(0, 0)
         self.draw_hud()
+        self.touch_controls.draw()
