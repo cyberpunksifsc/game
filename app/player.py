@@ -184,7 +184,7 @@ class Player:
         pyxel.line(mx, my - 4, mx, my + 4, color)
         pyxel.circb(mx, my, 3, color)
 
-    def draw_hud(self):
+    def draw_hud(self, game_over: bool = False):
         """Desenha o display de status das âncoras e notificações corporativas."""
         # 1. Painel de Âncoras (canto superior esquerdo)
         # Mostra os 3 slots com o status: Ativa (Verde), Em Espera (Laranja), Livre (Cinza)
@@ -215,8 +215,8 @@ class Player:
             length_str = f"CABO:{int(self.anchor_system.rope_length)}m"
             pyxel.text(7, 13, length_str, 6)
 
-        # 3. Mensagens de feedback dinâmico
-        if self.anchor_system.feedback_timer > 0:
+        # 3. Mensagens de feedback dinâmico (ocultas durante o Game Over)
+        if self.anchor_system.feedback_timer > 0 and not game_over:
             msg = self.anchor_system.feedback_msg
             color = self.anchor_system.feedback_color
             tw = len(msg) * 4
@@ -225,27 +225,14 @@ class Player:
             pyxel.rectb(x - 4, 24, tw + 8, 11, color)
             pyxel.text(x, 27, msg, color)
 
-        # 4. Tela de Game Over / Queda Fatal
-        if self.anchor_system.state == STATE_FATAL_FALL:
-            box_w = 210
-            box_h = 50
-            bx = (self.app.WIDTH - box_w) // 2
-            by = (self.app.HEIGHT - box_h) // 2
-
-            pyxel.rect(bx, by, box_w, box_h, 0)
-            pyxel.rectb(bx, by, box_w, box_h, 8)
-            pyxel.rectb(bx + 2, by + 2, box_w - 4, box_h - 4, 8)
-
-            pyxel.text(bx + 16, by + 10, "[ RESCISAO DE CONTRATO: QUEDA FATAL ]", 8)
-            pyxel.text(bx + 14, by + 22, "O trabalhador falhou ao se ancorar.", 7)
-            pyxel.text(bx + 16, by + 34, "TOQUE NA TELA OU [R]/[ESPACO] P/ RETENTAR", 10)
+        # 4. A tela de Game Over (qualquer causa) é desenhada por PlayerHealthAndScore
 
         # 5. Dicas de Controles (alternável com tecla H)
-        if self.show_controls_help and self.anchor_system.state != STATE_FATAL_FALL:
+        if self.show_controls_help and not game_over:
             help_y = self.app.HEIGHT - 10
             pyxel.text(4, help_y, "[A/D]Balanco [W/S]Cabo [E]Limpar [Espaco]Salto [R]Recolher [T]Touch", 6)
 
-    def draw(self, camera_x: float = None, camera_y: float = None):
+    def draw(self, camera_x: float = None, camera_y: float = None, game_over: bool = False):
         """Renderiza corda, âncoras, mira, sprite do alpinista e HUD."""
         if camera_x is None:
             camera_x = self.anchor_system.camera_x
@@ -255,7 +242,8 @@ class Player:
         # 1. Elementos em coordenadas de mundo (ativa a câmera do Pyxel)
         pyxel.camera(int(camera_x), int(camera_y))
         self.draw_anchors(camera_x, camera_y)
-        self.draw_crosshair_and_aim(camera_x, camera_y)
+        if not game_over:
+            self.draw_crosshair_and_aim(camera_x, camera_y)
         self.draw_cable()
 
         # Sprite do Alpinista
@@ -276,5 +264,5 @@ class Player:
 
         # 2. Interface HUD (fixa na tela com câmera resetada em (0, 0))
         pyxel.camera(0, 0)
-        self.draw_hud()
-        self.touch_controls.draw()
+        self.draw_hud(game_over)
+        self.touch_controls.draw(hide_controls=game_over)

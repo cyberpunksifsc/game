@@ -61,10 +61,19 @@ class PlayerCleaningSystem:
     efeitos visuais, pontuação e feedback corporativo.
     """
 
-    def __init__(self, player, building):
+    def __init__(self, player, building, stats=None):
         self.player = player
         self.building = building
+        # Sistema de HP/Eficiência/Pontuação (player_health_and_score.PlayerHealthAndScore)
+        self.stats = stats
 
+        # Configuração de sons chiptune para limpeza e solda
+        self.init_sounds()
+
+        self.reset()
+
+    def reset(self):
+        """Limpa o estado da ação, partículas e popups (nova partida)."""
         # Janela atualmente em foco/alcance do alpinista
         self.target_window: Window | None = None
 
@@ -72,17 +81,9 @@ class PlayerCleaningSystem:
         self.is_cleaning = False
         self.current_action_type = ""  # "CLEANING" ou "REPAIRING"
 
-        # Pontuação acumulada no turno
-        self.score = 0
-        self.windows_cleaned = 0
-        self.windows_repaired = 0
-
         # Partículas e popups
         self.particles: list[Particle] = []
         self.popups: list[FloatingScore] = []
-
-        # Configuração de sons chiptune para limpeza e solda
-        self.init_sounds()
 
     def init_sounds(self):
         """Inicializa os sons chiptune dos equipamentos nos slots 6 a 9 do Pyxel."""
@@ -169,18 +170,15 @@ class PlayerCleaningSystem:
 
             if completed:
                 self.is_cleaning = False
+                points = self.stats.register_window_completed(action_type) if self.stats else 0
                 if action_type == "CLEANING":
-                    self.score += 100
-                    self.windows_cleaned += 1
                     self.play_sound(8, channel=1)
-                    self.popups.append(FloatingScore(wx, wy - 8, "+100 LIMPO!", 11))
-                    self.player.anchor_system.set_feedback("+100 VIDRO LIMPO!", 45, 11)
+                    self.popups.append(FloatingScore(wx, wy - 8, f"+{points} LIMPO!", 11))
+                    self.player.anchor_system.set_feedback(f"+{points} VIDRO LIMPO!", 45, 11)
                 else:
-                    self.score += 250
-                    self.windows_repaired += 1
                     self.play_sound(9, channel=1)
-                    self.popups.append(FloatingScore(wx, wy - 8, "+250 CONSERTADO!", 10))
-                    self.player.anchor_system.set_feedback("+250 VIDRO REPARADO!", 45, 10)
+                    self.popups.append(FloatingScore(wx, wy - 8, f"+{points} CONSERTADO!", 10))
+                    self.player.anchor_system.set_feedback(f"+{points} VIDRO REPARADO!", 45, 10)
 
                 # Flash com faíscas de celebração
                 for _ in range(16):
@@ -252,15 +250,4 @@ class PlayerCleaningSystem:
                 pct_str = f"{pct}%"
                 pyxel.text(bx + tw + 6, by, pct_str, 7)
 
-        # 2. Painel de Desempenho e Pontuação (canto superior direito da tela)
-        panel_w = 110
-        panel_h = 24
-        px = screen_width - panel_w - 4
-        py = 4
-
-        pyxel.rect(px, py, panel_w, panel_h, 0)
-        pyxel.rectb(px, py, panel_w, panel_h, 5)
-
-        pyxel.text(px + 4, py + 3, f"PONTOS: {self.score:05d}", 10)
-        pyxel.text(px + 4, py + 11, f"LIMPOS: {self.windows_cleaned}", 11)
-        pyxel.text(px + 56, py + 11, f"REPAROS: {self.windows_repaired}", 12)
+        # O painel de pontuação agora é desenhado por PlayerHealthAndScore.draw_hud

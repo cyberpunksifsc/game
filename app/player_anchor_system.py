@@ -154,6 +154,8 @@ class PlayerAnchorSystem:
         self.camera_y = 0.0
 
         self.action = "IDLE"
+        # Jogador sem input de movimento neste frame (usado pela barra de Eficiência Corporativa)
+        self.is_idle = True
         self.feedback_msg = ""
         self.feedback_timer = 0
         self.feedback_color = 7
@@ -344,18 +346,7 @@ class PlayerAnchorSystem:
             self._update_anchored(camera_x, camera_y)
         elif self.state == STATE_AIRBORNE:
             self._update_airborne(camera_x, camera_y, screen_height)
-        elif self.state == STATE_FATAL_FALL:
-            touch_on_ui = self.touch_controls and self.touch_controls.is_touching_ui(pyxel.mouse_x, pyxel.mouse_y)
-            retry_pressed = (
-                pyxel.btnp(pyxel.KEY_R)
-                or pyxel.btnp(pyxel.KEY_SPACE)
-                or (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui)
-                or (self.touch_controls and (self.touch_controls.btnp_jump or self.touch_controls.btnp_retrieve))
-                or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A)
-                or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START)
-            )
-            if retry_pressed:
-                self.reset()
+        # STATE_FATAL_FALL: o reinício da partida é tratado pelo Gameplay (tela unificada de Game Over)
 
     def _update_anchored(self, camera_x: float = 0.0, camera_y: float = 0.0):
         active = self.get_active_anchor()
@@ -413,6 +404,7 @@ class PlayerAnchorSystem:
             is_moving_vert = True
 
         # 3. Física de pêndulo simples com amortecimento e limites
+        self.is_idle = not is_moving_horiz and not is_moving_vert
         # Aceleração da gravidade tangencial
         gravity_acc = -(0.24 / self.rope_length) * math.sin(self.angle)
         self.angular_vel += gravity_acc
@@ -485,6 +477,7 @@ class PlayerAnchorSystem:
 
     def _update_airborne(self, camera_x: float = 0.0, camera_y: float = 0.0, screen_height: float = 180.0):
         self.action = "AIRBORNE"
+        self.is_idle = False
 
         # Gravidade linear e resistência do ar moderada
         self.vy += 0.16

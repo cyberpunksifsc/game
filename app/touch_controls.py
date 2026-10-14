@@ -142,8 +142,12 @@ class TouchControls:
         self._prev_clean = curr_clean
         self._prev_retrieve = curr_retrieve
 
-    def draw(self):
+    def draw(self, hide_controls: bool = False):
         """Renderiza os botões virtuais e botão de alternância no HUD."""
+        # Durante o Game Over, oculta os controles de toque para manter a tela limpa
+        if hide_controls:
+            return
+
         # Botão de alternar modo Touch (sempre presente discretamente no topo)
         tx, ty, tw, th = self.rect_toggle
         toggle_col = 11 if self.enabled else 5

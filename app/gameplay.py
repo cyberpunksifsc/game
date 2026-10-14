@@ -3,10 +3,15 @@ import pyxel
 from player import Player
 from building_generator import BuildingGenerator
 from player_cleaning_system import PlayerCleaningSystem
+from player_anchor_system import STATE_FATAL_FALL
+from player_health_and_score import PlayerHealthAndScore, REASON_FALL
 
 STATE_PLAYING = "PLAYING"
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
+
+# Som de alarme corporativo (definido em PlayerAnchorSystem.init_sounds)
+SOUND_GAME_OVER_ALARM = 5
 
 
 class Gameplay:
@@ -21,13 +26,23 @@ class Gameplay:
         # Jogador inicia na base térrea (meio da base: x=160, y=1800)
         self.player = Player(self.app, anchor_x=160, anchor_y=1800, rope_length=50)
 
+        # HP, barra de Eficiência Corporativa, pontuação e condições de game over
+        self.stats = PlayerHealthAndScore()
+
         # Sistema de limpeza e conserto de janelas (acionado com [E])
-        self.cleaning_system = PlayerCleaningSystem(self.player, self.building)
+        self.cleaning_system = PlayerCleaningSystem(self.player, self.building, self.stats)
 
     def enter(self):
         """Chamado toda vez que o app entra no estado GAMEPLAY."""
         self.carregar_recursos()
+        self.start_new_run()
+
+    def start_new_run(self):
+        """Reinicia a partida inteira: posição, pontuação, HP, barra e janelas do prédio."""
         self.player.anchor_system.reset()
+        self.building.generate()
+        self.cleaning_system.reset()
+        self.stats.reset()
         self.recenter_camera()
 
     def recenter_camera(self):
@@ -47,8 +62,29 @@ class Gameplay:
         # Carrega o spritesheet do personagem no banco 2
         self.player.carregar_recursos()
 
+    def _retry_pressed(self) -> bool:
+        """Comando de retentar após Game Over (teclado, toque, mouse ou gamepad)."""
+        touch = self.player.touch_controls
+        touch_on_ui = touch.is_touching_ui(pyxel.mouse_x, pyxel.mouse_y)
+        return (
+            pyxel.btnp(pyxel.KEY_R)
+            or pyxel.btnp(pyxel.KEY_SPACE)
+            or (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui)
+            or touch.btnp_jump
+            or touch.btnp_clean
+            or touch.btnp_retrieve
+            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A)
+            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START)
+        )
+
     def update(self):
-        was_fatal = (self.player.state == "FATAL_FALL")
+        # Game Over: congela a simulação e aguarda o comando de retentar
+        if self.stats.is_game_over:
+            self.stats.update(is_idle=False)
+            self.player.touch_controls.update()
+            if self.stats.can_retry and self._retry_pressed():
+                self.start_new_run()
+            return
 
         # Atualiza o sistema de limpeza e reparo de janelas
         self.cleaning_system.update()
@@ -59,17 +95,28 @@ class Gameplay:
         # Atualiza a movimentação e âncoras considerando a posição atual da câmera
         self.player.update(self.camera_x, self.camera_y)
 
-        # Se reiniciou após uma queda fatal, recentraliza a câmera imediatamente
-        if was_fatal and self.player.state != "FATAL_FALL":
-            self.recenter_camera()
+        # Condição 1 de Game Over: queda fatal (o alarme já é tocado pelo sistema de âncoras)
+        if self.player.state == STATE_FATAL_FALL:
+            self.stats.trigger_game_over(REASON_FALL)
+            return
+
+        # Barra corporativa cai mais rápido se o jogador estiver parado e sem trabalhar.
+        # Condições 2 (HP) e 3 (desempenho) são disparadas dentro do sistema de stats.
+        is_idle = self.player.anchor_system.is_idle and not self.cleaning_system.is_cleaning
+        self.stats.update(is_idle=is_idle)
+        if self.stats.is_game_over:
+            try:
+                pyxel.play(0, SOUND_GAME_OVER_ALARM)
+            except BaseException:
+                pass
+            self.cleaning_system.is_cleaning = False
             return
 
         # Acompanhamento suave da câmera (lerp)
-        if self.player.state != "FATAL_FALL":
-            target_x = (self.player.x + 16) - self.app.WIDTH / 2
-            target_y = (self.player.y + 16) - self.app.HEIGHT / 2
-            self.camera_x += (target_x - self.camera_x) * 0.12
-            self.camera_y += (target_y - self.camera_y) * 0.12
+        target_x = (self.player.x + 16) - self.app.WIDTH / 2
+        target_y = (self.player.y + 16) - self.app.HEIGHT / 2
+        self.camera_x += (target_x - self.camera_x) * 0.12
+        self.camera_y += (target_y - self.camera_y) * 0.12
 
     def draw_background(self):
         """Desenha o skyline de New Tokyo no fundo com efeito de paralaxe."""
@@ -98,8 +145,11 @@ class Gameplay:
         self.cleaning_system.draw_world(self.camera_x, self.camera_y)
 
         # 4. Jogador, âncoras, mira e HUD de movimentação
-        self.player.draw(self.camera_x, self.camera_y)
+        self.player.draw(self.camera_x, self.camera_y, game_over=self.stats.is_game_over)
 
-        # 5. HUD de limpeza e pontuação corporativa
+        # 5. HUD de limpeza e prompts de ação
         pyxel.camera(0, 0)
         self.cleaning_system.draw_hud(self.app.WIDTH, self.app.HEIGHT)
+
+        # 6. HUD de vida, barra de desempenho corporativo e tela de game over
+        self.stats.draw_hud(self.app.WIDTH, self.app.HEIGHT)
