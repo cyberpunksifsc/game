@@ -145,26 +145,26 @@ class PlayerHealthAndScore:
             pyxel.pset(x + 1, y + 1, 14)  # brilho
 
     def draw_hud(self, screen_width: int, screen_height: int):
-        # 1. Painel de Vida (abaixo do painel de âncoras)
-        pyxel.rect(4, 22, 50, 11, 0)
-        pyxel.rectb(4, 22, 50, 11, 5)
-        pyxel.text(7, 25, "VIDA", 7)
+        # 1. Painel de Vida (abaixo das âncoras - apenas corações visuais)
+        pyxel.rect(4, 21, 32, 10, 0)
+        pyxel.rectb(4, 21, 32, 10, 5)
         blink_off = self.is_invulnerable and (self.invulnerable_timer // 3) % 2 == 0
         for i in range(MAX_HP):
             filled = i < self.hp
             if blink_off and i == self.hp:
                 filled = True  # pisca o coração recém-perdido
-            self._draw_heart(25 + i * 9, 24, filled)
+            self._draw_heart(7 + i * 9, 23, filled)
 
-        # 2. Barra de Eficiência Corporativa (topo central)
-        bx, by, bw, bh = 118, 4, 84, 16
+        # 2. Barra de Eficiência Corporativa (topo central - compacto com % e barra)
+        bx, by, bw, bh = (screen_width - 76) // 2, 4, 76, 12
         pyxel.rect(bx, by, bw, bh, 0)
         is_low = self.efficiency <= EFFICIENCY_LOW_THRESHOLD
         alert_on = is_low and (pyxel.frame_count // 8) % 2 == 0
         pyxel.rectb(bx, by, bw, bh, 8 if alert_on else 5)
-        pyxel.text(bx + 4, by + 2, "DESEMPENHO", 8 if alert_on else 7)
+
         pct = int(self.efficiency * 100)
-        pyxel.text(bx + bw - 4 - len(f"{pct}%") * 4, by + 2, f"{pct}%", 7)
+        pct_str = f"{pct:02d}%"
+        pyxel.text(bx + 4, by + 4, pct_str, 8 if alert_on else 7)
 
         if self.efficiency > 0.5:
             fill_col = 11
@@ -172,22 +172,23 @@ class PlayerHealthAndScore:
             fill_col = 10
         else:
             fill_col = 8
-        bar_x, bar_y, bar_w, bar_h = bx + 4, by + 10, bw - 8, 4
+
+        bar_x, bar_y, bar_w, bar_h = bx + 22, by + 4, bw - 26, 4
         pyxel.rect(bar_x, bar_y, bar_w, bar_h, 1)
         fill_w = int(bar_w * self.efficiency)
         if fill_w > 0:
             pyxel.rect(bar_x, bar_y, fill_w, bar_h, fill_col)
 
-        # 3. Painel de Pontuação (canto superior direito)
-        panel_w = 110
-        panel_h = 24
+        # 3. Painel de Pontuação (canto superior direito - apenas o placar arcade)
+        panel_w = 42
+        panel_h = 12
         px = screen_width - panel_w - 4
         py = 4
         pyxel.rect(px, py, panel_w, panel_h, 0)
         pyxel.rectb(px, py, panel_w, panel_h, 5)
-        pyxel.text(px + 4, py + 3, f"PONTOS: {self.score:05d}", 10)
-        pyxel.text(px + 4, py + 11, f"LIMPOS: {self.windows_cleaned}", 11)
-        pyxel.text(px + 56, py + 11, f"REPAROS: {self.windows_repaired}", 12)
+        score_str = f"{self.score:05d}"
+        pyxel.text(px + (panel_w - len(score_str) * 4) // 2, py + 4, score_str, 10)
+
 
         # 4. Tela unificada de Game Over
         if self.is_game_over:

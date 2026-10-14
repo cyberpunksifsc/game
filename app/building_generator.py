@@ -295,11 +295,6 @@ class BuildingGenerator:
         for s in range(0, 72, 8):
             pyxel.line(gx + s, by + 12, gx + s + 4, by + 20, 9)
 
-        # Letreiro holográfico neon na base
-        pyxel.text(gx - 20, by + 2, "[ SETOR 01: MANUTENCAO INDUSTRIAL APEX ]", 11)
-        pyxel.text(gx + 6, by + 28, "PORTAO APEX-01", 7)
-        pyxel.text(gx - 4, by + 40, "ACESSO ALPINISTAS", 10)
-
         # Luzes de sinalização térrea piscando
         pulse = (pyxel.frame_count // 15) % 2
         pyxel.circ(self.building_left - 4, by + 6, 3, 8 if pulse else 9)
@@ -323,8 +318,7 @@ class BuildingGenerator:
         alert_col = 8 if (pyxel.frame_count // 12) % 2 == 0 else 7
         pyxel.circ(ax, ay - 55, 2, alert_col)
 
-        # Letreiro Apex no topo
-        pyxel.text(ax - 22, ay - 14, "NEO-APEX CORP", 12)
+        # Antena e topo estilizado sem poluição de texto
 
     def draw(self, camera_x: float, camera_y: float, target_window: Window | None = None):
         """Renderiza todo o edifício visível em coordenadas de mundo."""

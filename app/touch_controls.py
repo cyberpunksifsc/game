@@ -192,26 +192,21 @@ class TouchControls:
         pyxel.rectb(dx, dy, dw, dh, d_col)
         pyxel.tri(dx + 11, dy + 17, dx + 5, dy + 7, dx + 17, dy + 7, 7 if self.btn_down else 6)
 
-        # Rótulo de auxílio no D-Pad
-        pyxel.text(lx + 2, ly - 8, "BALANCO/CABO", 5)
-
         # 2. BOTÕES DE AÇÃO (Canto inferior direito)
-        # Botão SALTO / LINK
+        # Botão SALTO
         jx, jy, jw, jh = self.rect_jump
         is_jump_active = self.btnp_jump or self._prev_jump
         j_col = 11 if is_jump_active else 12
         pyxel.rect(jx, jy, jw, jh, 1 if is_jump_active else 0)
         pyxel.rectb(jx, jy, jw, jh, j_col)
-        pyxel.text(jx + 14, jy + 6, "SALTO", 7 if is_jump_active else 11)
-        pyxel.text(jx + 16, jy + 16, "LINK", 6)
+        pyxel.text(jx + 14, jy + 11, "SALTO", 7 if is_jump_active else 11)
 
-        # Botão LIMPAR / REPARAR [E]
+        # Botão AÇÃO [E] (Limpar/Consertar)
         cx, cy, cw, ch = self.rect_clean
         c_col = 10 if self.btn_clean else 9
         pyxel.rect(cx, cy, cw, ch, 1 if self.btn_clean else 0)
         pyxel.rectb(cx, cy, cw, ch, c_col)
-        pyxel.text(cx + 12, cy + 6, "LIMPAR", 7 if self.btn_clean else 10)
-        pyxel.text(cx + 18, cy + 16, "[E]", 6)
+        pyxel.text(cx + 18, cy + 11, "[E]", 7 if self.btn_clean else 10)
 
         # Botão RECOLHER [R]
         rex, rey, rew, reh = self.rect_retrieve
@@ -219,5 +214,5 @@ class TouchControls:
         re_col = 9 if is_ret_active else 5
         pyxel.rect(rex, rey, rew, reh, 1 if is_ret_active else 0)
         pyxel.rectb(rex, rey, rew, reh, re_col)
-        pyxel.text(rex + 10, rey + 5, "REC [R]", 7 if is_ret_active else 9)
-        pyxel.text(rex + 11, rey + 14, "ANCORA", 5)
+        pyxel.text(rex + 18, rey + 10, "[R]", 7 if is_ret_active else 9)
+

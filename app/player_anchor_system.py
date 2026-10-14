@@ -82,7 +82,6 @@ class Anchor:
         if is_link_candidate:
             radius = 5 + (self.pulse_timer % 4)
             pyxel.circb(ax, ay, radius, 12)
-            pyxel.text(ax - 14, ay - 10, "LINK OK", 11)
 
 
 class PlayerAnchorSystem:
@@ -231,14 +230,12 @@ class PlayerAnchorSystem:
         new_anchor = Anchor(target_x, target_y, is_active=False)
         self.anchors.append(new_anchor)
         self.play_sound(0)
-        self.set_feedback(f"ANCORA PLANTADA ({len(self.anchors)}/3)", 45, 11)
         return True
 
     def retrieve_anchor(self, cursor_x: float = None, cursor_y: float = None) -> bool:
         """Recolhe uma âncora já plantada inativa, liberando slot."""
         inactive_anchors = [a for a in self.anchors if not a.is_active]
         if not inactive_anchors:
-            self.set_feedback("NENHUMA ANCORA INATIVA PARA RECOLHER", 45, 9)
             return False
 
         target = None
@@ -256,7 +253,6 @@ class PlayerAnchorSystem:
 
         self.anchors.remove(target)
         self.play_sound(1)
-        self.set_feedback(f"ANCORA RECOLHIDA ({len(self.anchors)}/3)", 45, 10)
         return True
 
     def jump(self):
@@ -280,7 +276,6 @@ class PlayerAnchorSystem:
         self.vy = -tangential_speed * math.sin(self.angle) - LAUNCH_UPWARD_IMPULSE
 
         self.play_sound(2)
-        self.set_feedback("SALTO! PRESSIONE [ESPACO] PARA LINK", 60, 10)
 
     def try_link(self, cursor_x: float = None, cursor_y: float = None) -> bool:
         """Tenta reconectar a uma âncora já plantada enquanto no ar."""
@@ -308,7 +303,6 @@ class PlayerAnchorSystem:
             self.angular_vel = max(-MAX_ANGULAR_VEL, min(MAX_ANGULAR_VEL, new_angular_vel))
 
             self.play_sound(3)
-            self.set_feedback("LINK COM SUCESSO!", 45, 11)
             return True
         else:
             # Falha de link com feedback contextual
@@ -523,4 +517,3 @@ class PlayerAnchorSystem:
         if self.y > camera_y + screen_height + 35:
             self.state = STATE_FATAL_FALL
             self.play_sound(5)
-            self.set_feedback("CONTRATO RESCINDIDO: QUEDA FATAL", 9999, 8)

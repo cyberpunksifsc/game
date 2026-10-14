@@ -186,36 +186,32 @@ class Player:
 
     def draw_hud(self, game_over: bool = False):
         """Desenha o display de status das âncoras e notificações corporativas."""
-        # 1. Painel de Âncoras (canto superior esquerdo)
+        # 1. Painel de Âncoras (canto superior esquerdo - 3 slots visuais compactos)
         # Mostra os 3 slots com o status: Ativa (Verde), Em Espera (Laranja), Livre (Cinza)
-        pyxel.rect(4, 4, 110, 16, 0)
-        pyxel.rectb(4, 4, 110, 16, 5)
-        pyxel.text(7, 6, "ANCORAS:", 7)
+        panel_w = 44
+        panel_h = 15
+        pyxel.rect(4, 4, panel_w, panel_h, 0)
+        pyxel.rectb(4, 4, panel_w, panel_h, 5)
 
         for i in range(MAX_ANCHORS):
-            box_x = 48 + i * 16
+            box_x = 7 + i * 12
             box_y = 6
             if i < len(self.anchor_system.anchors):
                 anc = self.anchor_system.anchors[i]
                 if anc.is_active:
                     # Ativa: verde néon
-                    pyxel.rect(box_x, box_y, 11, 11, 11)
+                    pyxel.rect(box_x, box_y, 9, 11, 11)
                     pyxel.text(box_x + 3, box_y + 3, "A", 0)
                 else:
                     # Inativa plantada: laranja néon
-                    pyxel.rect(box_x, box_y, 11, 11, 9)
+                    pyxel.rect(box_x, box_y, 9, 11, 9)
                     pyxel.text(box_x + 3, box_y + 3, "P", 0)
             else:
                 # Slot disponível
-                pyxel.rectb(box_x, box_y, 11, 11, 5)
-                pyxel.pset(box_x + 5, box_y + 5, 5)
+                pyxel.rectb(box_x, box_y, 9, 11, 5)
+                pyxel.pset(box_x + 4, box_y + 5, 5)
 
-        # 2. Indicador de Comprimento do Cabo
-        if self.anchor_system.state == STATE_ANCHORED:
-            length_str = f"CABO:{int(self.anchor_system.rope_length)}m"
-            pyxel.text(7, 13, length_str, 6)
-
-        # 3. Mensagens de feedback dinâmico (ocultas durante o Game Over)
+        # 2. Mensagens de feedback de erro impeditivo (ocultas durante Game Over)
         if self.anchor_system.feedback_timer > 0 and not game_over:
             msg = self.anchor_system.feedback_msg
             color = self.anchor_system.feedback_color
@@ -225,12 +221,8 @@ class Player:
             pyxel.rectb(x - 4, 24, tw + 8, 11, color)
             pyxel.text(x, 27, msg, color)
 
-        # 4. A tela de Game Over (qualquer causa) é desenhada por PlayerHealthAndScore
+        # 3. Dicas de Controles de rodapé removidas para desobstruir a tela
 
-        # 5. Dicas de Controles (alternável com tecla H)
-        if self.show_controls_help and not game_over:
-            help_y = self.app.HEIGHT - 10
-            pyxel.text(4, help_y, "[A/D]Balanco [W/S]Cabo [E]Limpar [Espaco]Salto [R]Recolher [T]Touch", 6)
 
     def draw(self, camera_x: float = None, camera_y: float = None, game_over: bool = False):
         """Renderiza corda, âncoras, mira, sprite do alpinista e HUD."""

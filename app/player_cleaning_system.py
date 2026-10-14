@@ -173,12 +173,11 @@ class PlayerCleaningSystem:
                 points = self.stats.register_window_completed(action_type) if self.stats else 0
                 if action_type == "CLEANING":
                     self.play_sound(8, channel=1)
-                    self.popups.append(FloatingScore(wx, wy - 8, f"+{points} LIMPO!", 11))
-                    self.player.anchor_system.set_feedback(f"+{points} VIDRO LIMPO!", 45, 11)
+                    self.popups.append(FloatingScore(wx, wy - 8, f"+{points}", 11))
                 else:
                     self.play_sound(9, channel=1)
-                    self.popups.append(FloatingScore(wx, wy - 8, f"+{points} CONSERTADO!", 10))
-                    self.player.anchor_system.set_feedback(f"+{points} VIDRO REPARADO!", 45, 10)
+                    self.popups.append(FloatingScore(wx, wy - 8, f"+{points}", 10))
+
 
                 # Flash com faíscas de celebração
                 for _ in range(16):
@@ -222,32 +221,18 @@ class PlayerCleaningSystem:
 
     def draw_hud(self, screen_width: int, screen_height: int):
         """Desenha a dica de ação contextual [E] e o placar corporativo no HUD."""
-        # 1. Prompt de ação contextual quando o alpinista está sobre uma janela
+        # 1. Prompt de ação contextual quando o alpinista está sobre uma janela (badge minimalista [E])
         if self.target_window and self.target_window.state != WINDOW_STATE_CLEAN:
-            hx, hy = self.player.anchor_system.get_harness_pos()
             screen_wx = int(self.target_window.x + self.target_window.w / 2 - self.player.anchor_system.camera_x)
-            screen_wy = int(self.target_window.y - self.player.anchor_system.camera_y - 12)
+            screen_wy = int(self.target_window.y - self.player.anchor_system.camera_y - 10)
+            color = 11 if self.target_window.state == WINDOW_STATE_DIRTY else 10
 
-            if self.target_window.state == WINDOW_STATE_DIRTY:
-                label = "[E/LIMPAR] (1.5s)"
-                color = 11
-            else:
-                label = "[E/LIMPAR] REPARO (3.5s)"
-                color = 10
-
-            tw = len(label) * 4
-            bx = screen_wx - tw // 2
+            # Badge compacto de 16x9 centralizado sobre o topo da janela
+            bx = screen_wx - 8
             by = screen_wy
+            pyxel.rect(bx, by, 16, 9, 0)
+            pyxel.rectb(bx, by, 16, 9, color)
+            pyxel.text(bx + 3, by + 2, "[E]", color)
 
-            # Caixa do prompt
-            pyxel.rect(bx - 3, by - 2, tw + 6, 9, 0)
-            pyxel.rectb(bx - 3, by - 2, tw + 6, 9, color)
-            pyxel.text(bx, by, label, color)
-
-            # Barra de porcentagem visível em cima se estiver em andamento
-            if self.target_window.progress > 0:
-                pct = int(self.target_window.progress * 100)
-                pct_str = f"{pct}%"
-                pyxel.text(bx + tw + 6, by, pct_str, 7)
 
         # O painel de pontuação agora é desenhado por PlayerHealthAndScore.draw_hud
