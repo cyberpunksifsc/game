@@ -85,6 +85,18 @@ class PlayerCleaningSystem:
         self.particles: list[Particle] = []
         self.popups: list[FloatingScore] = []
 
+        # Cooldown de atordoamento ao ser atingido por balas perdidas
+        self.interrupt_cooldown = 0
+
+    def interrupt_by_damage(self):
+        """Interrompe a limpeza/conserto imediatamente ao ser atingido por um tiro.
+
+        O progresso atual do vidro fica preservado para retomada posterior.
+        """
+        self.is_cleaning = False
+        self.interrupt_cooldown = 24  # ~0.8s de recuo/atordoamento antes de retomar
+
+
     def init_sounds(self):
         """Inicializa os sons chiptune dos equipamentos nos slots 6 a 9 do Pyxel."""
         try:
@@ -117,10 +129,17 @@ class PlayerCleaningSystem:
         # 3. Identifica a janela sob alcance
         self.target_window = self.building.find_target_window(hx, hy)
 
+        # Se estiver em cooldown de atordoamento por tiro, impede trabalho temporariamente
+        if self.interrupt_cooldown > 0:
+            self.interrupt_cooldown -= 1
+            self.is_cleaning = False
+            return
+
         # Se não estiver ancorado ou não tiver janela acionável sob alcance, desativa ação
         if self.player.anchor_system.state != STATE_ANCHORED or self.target_window is None:
             self.is_cleaning = False
             return
+
 
         # 4. Verifica o acionamento contextual da Tecla [E], botão touch LIMPAR ou Gamepad X
         holding_e = (

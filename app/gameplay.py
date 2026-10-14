@@ -5,6 +5,7 @@ from building_generator import BuildingGenerator
 from player_cleaning_system import PlayerCleaningSystem
 from player_anchor_system import STATE_FATAL_FALL
 from player_health_and_score import PlayerHealthAndScore, REASON_FALL
+from hazard_spawner import HazardSpawner
 
 STATE_PLAYING = "PLAYING"
 BASE_DIR = Path(__file__).resolve().parent
@@ -29,6 +30,9 @@ class Gameplay:
         # HP, barra de Eficiência Corporativa, pontuação e condições de game over
         self.stats = PlayerHealthAndScore()
 
+        # Sistema de perigos: balas perdidas e telegrafagem laser
+        self.hazard_spawner = HazardSpawner()
+
         # Sistema de limpeza e conserto de janelas (acionado com [E])
         self.cleaning_system = PlayerCleaningSystem(self.player, self.building, self.stats)
 
@@ -38,12 +42,14 @@ class Gameplay:
         self.start_new_run()
 
     def start_new_run(self):
-        """Reinicia a partida inteira: posição, pontuação, HP, barra e janelas do prédio."""
+        """Reinicia a partida inteira: posição, pontuação, HP, barra, perigos e janelas do prédio."""
         self.player.anchor_system.reset()
         self.building.generate()
         self.cleaning_system.reset()
         self.stats.reset()
+        self.hazard_spawner.reset()
         self.recenter_camera()
+
 
     def recenter_camera(self):
         """Centraliza a câmera na posição do jogador."""
@@ -95,6 +101,17 @@ class Gameplay:
         # Atualiza a movimentação e âncoras considerando a posição atual da câmera
         self.player.update(self.camera_x, self.camera_y)
 
+        # Atualiza perigos urbanos (balas perdidas, telegrafagem laser e colisões)
+        self.hazard_spawner.update(
+            self.player,
+            self.stats,
+            self.cleaning_system,
+            self.camera_x,
+            self.camera_y,
+            self.app.WIDTH,
+            self.app.HEIGHT,
+        )
+
         # Condição 1 de Game Over: queda fatal (o alarme já é tocado pelo sistema de âncoras)
         if self.player.state == STATE_FATAL_FALL:
             self.stats.trigger_game_over(REASON_FALL)
@@ -144,12 +161,21 @@ class Gameplay:
         # 3. Partículas e feixes de limpeza/solda
         self.cleaning_system.draw_world(self.camera_x, self.camera_y)
 
-        # 4. Jogador, âncoras, mira e HUD de movimentação
-        self.player.draw(self.camera_x, self.camera_y, game_over=self.stats.is_game_over)
+        # 4. Perigos urbanos: feixes de mira laser e balas traçantes neon
+        self.hazard_spawner.draw(self.camera_x, self.camera_y)
 
-        # 5. HUD de limpeza e prompts de ação
+        # 5. Jogador, âncoras, mira e HUD de movimentação
+        self.player.draw(
+            self.camera_x,
+            self.camera_y,
+            game_over=self.stats.is_game_over,
+            is_invulnerable=self.stats.is_invulnerable,
+        )
+
+        # 6. HUD de limpeza e prompts de ação
         pyxel.camera(0, 0)
         self.cleaning_system.draw_hud(self.app.WIDTH, self.app.HEIGHT)
 
-        # 6. HUD de vida, barra de desempenho corporativo e tela de game over
+        # 7. HUD de vida, barra de desempenho corporativo e tela de game over
         self.stats.draw_hud(self.app.WIDTH, self.app.HEIGHT)
+

@@ -224,7 +224,7 @@ class Player:
         # 3. Dicas de Controles de rodapé removidas para desobstruir a tela
 
 
-    def draw(self, camera_x: float = None, camera_y: float = None, game_over: bool = False):
+    def draw(self, camera_x: float = None, camera_y: float = None, game_over: bool = False, is_invulnerable: bool = False):
         """Renderiza corda, âncoras, mira, sprite do alpinista e HUD."""
         if camera_x is None:
             camera_x = self.anchor_system.camera_x
@@ -238,11 +238,12 @@ class Player:
             self.draw_crosshair_and_aim(camera_x, camera_y)
         self.draw_cable()
 
-        # Sprite do Alpinista
+        # Sprite do Alpinista com efeito de piscar durante invulnerabilidade
         px = int(self.anchor_system.x)
         py = int(self.anchor_system.y)
+        blink_hidden = is_invulnerable and ((pyxel.frame_count // 2) % 2 == 0)
 
-        if self.anchor_system.state != STATE_FATAL_FALL:
+        if self.anchor_system.state != STATE_FATAL_FALL and not blink_hidden:
             if self.anim_row == -1:
                 # Spritesheet de salto/voo no ar (em Y=160 no Banco 2)
                 u = self.current_frame * 32
