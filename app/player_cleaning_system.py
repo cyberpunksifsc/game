@@ -184,8 +184,13 @@ class PlayerCleaningSystem:
                 if pyxel.frame_count % 4 == 0:
                     self.play_sound(7, channel=1)
 
-            # Avança o progresso da janela (1 frame de trabalho)
-            completed = self.target_window.advance_work(1.0)
+            # Avança o progresso da janela (considerando multiplicador de Power-Up se ativo)
+            work_mult = (
+                self.stats.powerup_system.work_speed_multiplier
+                if (self.stats and getattr(self.stats, "powerup_system", None))
+                else 1.0
+            )
+            completed = self.target_window.advance_work(work_mult)
 
             if completed:
                 self.is_cleaning = False

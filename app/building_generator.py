@@ -23,7 +23,7 @@ class Window:
         self.floor = floor
 
         self.state = initial_state
-        self.work_frames = 0
+        self.work_frames = 0.0
         self.pulse_timer = random.randint(0, 60)
 
     @property
@@ -40,14 +40,14 @@ class Window:
             return 0.0
         return min(1.0, self.work_frames / float(self.max_frames))
 
-    def advance_work(self, amount_frames: int = 1) -> bool:
+    def advance_work(self, amount_frames: float = 1.0) -> bool:
         """Avança o progresso da ação contextual. Retorna True se o trabalho foi concluído."""
         if self.state == WINDOW_STATE_CLEAN:
             return False
 
         self.work_frames += amount_frames
         if self.work_frames >= self.max_frames:
-            self.work_frames = 0
+            self.work_frames = 0.0
             self.state = WINDOW_STATE_CLEAN
             return True
         return False

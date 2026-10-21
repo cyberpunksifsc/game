@@ -39,7 +39,8 @@ class PlayerHealthAndScore:
     tempo/inatividade), pontuação e condições de game over.
     """
 
-    def __init__(self):
+    def __init__(self, powerup_system=None):
+        self.powerup_system = powerup_system
         self.reset()
 
     def reset(self):
@@ -57,6 +58,9 @@ class PlayerHealthAndScore:
         self.game_over_reason = ""
         self.game_over_timer = 0
 
+        if self.powerup_system is not None:
+            self.powerup_system.activate_for_shift()
+
     # ------------------------------------------------------------------
     # Atualização
     # ------------------------------------------------------------------
@@ -72,6 +76,8 @@ class PlayerHealthAndScore:
         drain = EFFICIENCY_BASE_DRAIN
         if is_idle:
             drain *= EFFICIENCY_IDLE_MULTIPLIER
+        if self.powerup_system is not None:
+            drain *= self.powerup_system.efficiency_drain_multiplier
         self.efficiency = max(0.0, self.efficiency - drain)
 
         if self.efficiency <= 0.0:
@@ -91,6 +97,9 @@ class PlayerHealthAndScore:
             self.windows_cleaned += 1
             gain = EFFICIENCY_GAIN_CLEAN
 
+        if self.powerup_system is not None:
+            points = int(points * self.powerup_system.score_multiplier)
+
         self.score += points
         self.efficiency = min(1.0, self.efficiency + gain)
         return points
@@ -102,6 +111,10 @@ class PlayerHealthAndScore:
     def take_damage(self, amount: int = 1) -> bool:
         """Aplica dano ao jogador. Retorna True se o dano foi efetivamente aplicado."""
         if self.is_game_over or self.is_invulnerable:
+            return False
+
+        if self.powerup_system and self.powerup_system.try_absorb_hit():
+            self.invulnerable_timer = 20
             return False
 
         self.hp = max(0, self.hp - amount)
@@ -189,6 +202,9 @@ class PlayerHealthAndScore:
         score_str = f"{self.score:05d}"
         pyxel.text(px + (panel_w - len(score_str) * 4) // 2, py + 4, score_str, 10)
 
+        # 3b. Badge de Power-Up equipado (abaixo dos corações)
+        if self.powerup_system is not None:
+            self.powerup_system.draw_hud_badge(screen_width, screen_height)
 
         # 4. Tela unificada de Game Over
         if self.is_game_over:

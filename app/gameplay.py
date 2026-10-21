@@ -1,11 +1,13 @@
 from pathlib import Path
 import pyxel
+from audio_manager import AudioManager
 from player import Player
 from building_generator import BuildingGenerator
 from player_cleaning_system import PlayerCleaningSystem
 from player_anchor_system import STATE_FATAL_FALL
 from player_health_and_score import PlayerHealthAndScore, REASON_FALL
 from hazard_spawner import HazardSpawner
+from powerup_system import PowerUpSystem
 
 STATE_PLAYING = "PLAYING"
 BASE_DIR = Path(__file__).resolve().parent
@@ -18,8 +20,13 @@ SOUND_GAME_OVER_ALARM = 5
 class Gameplay:
     def __init__(self, app):
         self.app = app
+        self.audio = getattr(app, "audio", None) or AudioManager()
         self.camera_x = 0.0
         self.camera_y = 0.0
+
+        if not hasattr(self.app, "powerup_system") or self.app.powerup_system is None:
+            self.app.powerup_system = PowerUpSystem()
+        self.powerup_system = self.app.powerup_system
 
         # Gerador da fachada do arranha-céu Apex-01
         self.building = BuildingGenerator()
@@ -28,7 +35,7 @@ class Gameplay:
         self.player = Player(self.app, anchor_x=160, anchor_y=1800, rope_length=50)
 
         # HP, barra de Eficiência Corporativa, pontuação e condições de game over
-        self.stats = PlayerHealthAndScore()
+        self.stats = PlayerHealthAndScore(powerup_system=self.powerup_system)
 
         # Sistema de perigos: balas perdidas e telegrafagem laser
         self.hazard_spawner = HazardSpawner()
@@ -49,6 +56,7 @@ class Gameplay:
         self.stats.reset()
         self.hazard_spawner.reset()
         self.recenter_camera()
+        self.audio.update_gameplay_bgm(self.player.y, is_game_over=False)
 
 
     def recenter_camera(self):
@@ -59,7 +67,10 @@ class Gameplay:
     def carregar_recursos(self):
         resource_file = BASE_DIR / "resources.pyxres"
         if resource_file.exists():
-            pyxel.load(str(resource_file))
+            try:
+                pyxel.load(str(resource_file), exclude_sounds=True, exclude_musics=True)
+            except TypeError:
+                pyxel.load(str(resource_file))
 
         bg_image = ROOT_DIR / "assets" / "BackGround" / "city1" / "1.png"
         if bg_image.exists():
@@ -86,6 +97,7 @@ class Gameplay:
     def update(self):
         # Game Over: congela a simulação e aguarda o comando de retentar
         if self.stats.is_game_over:
+            self.audio.update_gameplay_bgm(self.player.y, is_game_over=True)
             self.stats.update(is_idle=False)
             self.player.touch_controls.update()
             if self.stats.can_retry and self._retry_pressed():
@@ -115,6 +127,7 @@ class Gameplay:
         # Condição 1 de Game Over: queda fatal (o alarme já é tocado pelo sistema de âncoras)
         if self.player.state == STATE_FATAL_FALL:
             self.stats.trigger_game_over(REASON_FALL)
+            self.audio.update_gameplay_bgm(self.player.y, is_game_over=True)
             return
 
         # Barra corporativa cai mais rápido se o jogador estiver parado e sem trabalhar.
@@ -127,7 +140,11 @@ class Gameplay:
             except BaseException:
                 pass
             self.cleaning_system.is_cleaning = False
+            self.audio.update_gameplay_bgm(self.player.y, is_game_over=True)
             return
+
+        # Atualiza trilha sonora dinâmica conforme o setor vertical atual
+        self.audio.update_gameplay_bgm(self.player.y, is_game_over=False)
 
         # Acompanhamento suave da câmera (lerp)
         target_x = (self.player.x + 16) - self.app.WIDTH / 2
@@ -171,6 +188,11 @@ class Gameplay:
             game_over=self.stats.is_game_over,
             is_invulnerable=self.stats.is_invulnerable,
         )
+
+        # 5b. Bolha de Escudo Reativo ao redor do alpinista (coordenadas de mundo)
+        if not self.stats.is_game_over and self.player.state != STATE_FATAL_FALL:
+            pyxel.camera(int(self.camera_x), int(self.camera_y))
+            self.powerup_system.draw_player_shield(self.player.x, self.player.y)
 
         # 6. HUD de limpeza e prompts de ação
         pyxel.camera(0, 0)

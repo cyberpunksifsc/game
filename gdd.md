@@ -1,6 +1,6 @@
 # Game Design Document
 
-Revision: 0.0.1
+Revision: 0.2.0
 
 > GDD Template Written by: Benjamin “HeadClot” Stanley
 
@@ -39,11 +39,17 @@ Cyberpunk
  
 ### Licenses / Hardware / Other Costs
  
-- Pyxel (MIT License, gratuito)
-- (a definir conforme necessidade)
+- **Motor de Jogo**: Pyxel (MIT License, R$ 0,00)
+- **Ferramentas de Pixel Art**: Aseprite / Pixel Art tools para criação de sprites, tilesets e animações (R$ 0,00)
+- **Trilha Sonora e Tipografia**: Pacote musical *Electric Pulse* por DavidKBD e fonte pixel art *BoldPixels* por Yūki (gratuitos / royalty-free, R$ 0,00)
+- **Hardware e Distribuição**: Máquina local de desenvolvimento e exportação Web via Pyxel HTML5 (R$ 0,00)
+
 ### Total Costs with breakdown
  
-- (a definir)
+- **Engine Pyxel (MIT License)**: R$ 0,00
+- **Aseprite / Pixel Art Tools**: R$ 0,00
+- **DavidKBD Electric Pulse OST & BoldPixels Font (gratuitos/royalty-free)**: R$ 0,00
+- **Custo Total de Licenciamento**: **R$ 0,00** (desenvolvimento independente solo de ~96h totais)
 ## Influences (Brief)
  
 **Influence #1**
@@ -96,11 +102,34 @@ A narrativa implícita reflete o tema do trabalhador descartável. No topo da te
 - Durante a ação, o personagem fica travado no local e vulnerável.
 - A ação pode ser interrompida (inclusive automaticamente, se o jogador for atingido por um tiro) e retomada depois exatamente de onde parou, sem perda de progresso isso pode acontecer múltiplas vezes na mesma janela.
 - Painéis limpos/consertados geram pontuação e aumentam o multiplicador de eficiência do turno.
-### Power-Ups Pré-Partida (Monetização) pós-MVP
+### Power-Ups Pré-Partida (`powerup_system.py`)
  
-**Details**: Itens consumíveis adquiridos ou equipados antes do início do turno de trabalho, conferindo vantagens temporárias ou passivas. Fora do escopo do desenvolvimento inicial de 3 meses.
+**Details**: Equipamentos corporativos selecionáveis no menu principal antes do início do turno de trabalho (`powerup_system.py`), conferindo vantagens táticas passivas ou reativas para enfrentar a fachada do edifício Apex-01.
  
-**How it works**: Através da loja interna, o jogador poderá adquirir itens (a detalhar quando esta fase for retomada).
+**How it works**: Antes de iniciar a partida (via teclas `1` a `4`, clique ou toque no menu inicial), o jogador pode escolher entre o turno padrão (sem equipamento extra) ou um dos 3 Power-Ups de equipamento abaixo:
+- **Escudo Reativo**: Gera uma barreira energética que absorve **1 projétil** sem causar dano de HP e sem interromper a ação de limpeza ou reparo em andamento.
+- **Rodo Turbo**: Otimiza as ferramentas de manutenção, garantindo **+50% de velocidade** na execução de limpeza (reduzindo o tempo de 1.5s para 1.0s) e de reparo a laser (de 3.5s para ~2.33s).
+- **Estabilizador Corporativo**: Modula a telemetria enviada à Neo-Apex, proporcionando **-30% de dreno na barra de Eficiência Corporativa** e **+25% de bônus na pontuação** por janela concluída.
+
+### Controles Multiplataforma (Desktop, Touch Mobile e Gamepad)
+
+**Details**: O jogo implementa uma camada unificada de entrada multiplataforma (`touch_controls.py`), permitindo jogar perfeitamente no navegador Desktop (Teclado + Mouse), em dispositivos móveis com tela sensível ao toque (Android / Mobile Web) e com controles físicos (Gamepad USB/Bluetooth), além de integrar atalhos para seleção de equipamentos (`powerup_system.py`) e controle de áudio dinâmico (`audio_manager.py`).
+
+**How it works**:
+- **Desktop (Mouse + Teclado)**:
+  - **Mira e Disparo de Âncora**: Cursor do mouse mira na fachada e `Clique Esquerdo` planta uma nova âncora ou realiza reconexão aérea.
+  - **Recolher Âncora**: `Clique Direito` sobre a âncora ou tecla `R`.
+  - **Movimentação na Corda**: `W`/`S` ou `Setas Cima`/`Baixo` para subir e descer no cabo; `A`/`D` ou `Setas Esquerda`/`Direita` para aplicar impulso pendular.
+  - **Salto e Link Aéreo**: `Espaço` desconecta da âncora atual e reconecta a outra âncora alinhada no eixo Y.
+  - **Limpeza e Reparo Contextual**: Segurar a tecla `E` sobre uma janela suja ou quebrada.
+  - **Seleção de Power-Up e Sistema**: Teclas `1` a `4` no menu inicial selecionam o equipamento (`powerup_system.py`), tecla `M` alterna o mute da trilha sonora e efeitos (`audio_manager.py`), tecla `H` exibe/oculta o painel de ajuda e tecla `T` alterna a sobreposição de controles virtuais (`touch_controls.py`).
+- **Touch Mobile (`touch_controls.py`)**:
+  - **D-Pad Virtual** no canto inferior esquerdo para subida/descida no cabo e balanço pendular.
+  - **Botões Virtuais de Ação** no canto inferior direito: `[SALTO]` (pulo e link aéreo), `[E]` (limpar/reparar) e `[R]` (recolher âncora).
+  - **Toque Direto no Mundo**: Tocar em qualquer ponto da fachada fora dos botões do HUD dispara ou conecta uma âncora naquela direção.
+  - **Botão `[TOUCH]` / `[MOUSE]`**: Localizado no topo direito para ativar ou ocultar a interface virtual a qualquer momento.
+- **Gamepad (USB / Bluetooth)**:
+  - `D-Pad` controla o movimento vertical e o balanço na corda; `Botão A` salta/realiza link aéreo e confirma menus; `Botão X` executa limpeza/reparo; `Botão Y` recolhe âncora; `Start` inicia ou reinicia o turno.
  
 ---
  
@@ -179,16 +208,25 @@ Nota: o motor de áudio nativo do Pyxel suporta 4 canais simultâneos em estilo 
  
 *Nomenclatura de scripts corrigida para `.py`, refletindo o uso do Pyxel/Python*
  
+**Core & UI Scripts**
+- `main.py`: inicialização do motor Pyxel (`320x180`) e máquina de estados principal.
+- `main_menu.py`: tela inicial com seleção de Power-Ups pré-partida e início de turno.
+- `gameplay.py`: loop principal do turno de trabalho, câmera com paralaxe e integração de sistemas.
+- `touch_controls.py`: controles virtuais de toque na tela (D-Pad e botões de ação) para dispositivos móveis/web e suporte a Gamepad.
+- `audio_manager.py`: gerenciamento de efeitos sonoros chiptune e trilha sonora dinâmica por setor de altitude (Setores Baixos, Médios e Apex).
+- `powerup_system.py`: gerenciamento dos equipamentos pré-partida (*Escudo Reativo*, *Rodo Turbo* e *Estabilizador Corporativo*).
+
 **Character Scripts (Player)**
+- `player.py`: entidade principal do alpinista, animações de sprite 32x32 e integração de controles.
 - `player_anchor_system.py`: gerencia as 3 âncoras (plantar, recolher, âncora ativa), física de corda na âncora ativa, salto e link de troca com verificação de alinhamento no eixo Y, e a condição de queda fatal.
 - `player_cleaning_system.py`: detecção de janelas sujas/quebradas, controle do timer de limpeza (1.5s) e conserto (3.5s), pausa/retomada de progresso, interrupção por dano.
 - `player_health_and_score.py`: gerencia HP (dano por projétil), barra de Eficiência Corporativa (queda por tempo/inatividade), pontuação e condições de game over.
 **Ambient Scripts**
 - `building_generator.py`: geração procedural da fachada colunas de janelas, vigas, pontos válidos de ancoragem.
-- `hazard_spawner.py`: spawn de balas perdidas (MVP); drones e descargas elétricas como extensão futura.
+- `hazard_spawner.py`: spawn de balas perdidas com curva de dificuldade progressiva e coordenação de drones.
 **Hazard Scripts**
-- `stray_bullet.py`: trajetória e colisão dos projéteis perdidos.
-- `patrol_drone_ai.py` *(stretch goal, pós-MVP)*: comportamento de patrulha e disparo de advertência.
+- `stray_bullet.py`: trajetória, telegrafagem laser e colisão dos projéteis perdidos.
+- `patrol_drone_ai.py`: comportamento de patrulha por setor, mira laser e disparo de advertência.
 ---
  
 # Animation

@@ -1,6 +1,7 @@
 from pathlib import Path
 import pyxel
 from constants import STATE_MAIN_MENU, STATE_GAMEPLAY
+from audio_manager import AudioManager
 from main_menu import MainMenu
 from gameplay import Gameplay
 
@@ -20,6 +21,7 @@ class App:
     pyxel.init(self.WIDTH, self.HEIGHT, "Game")
     pyxel.mouse(self.MOUSE_CONFIG)
 
+    self.audio = AudioManager()
     self.main_menu = MainMenu(self)
     self.gameplay = Gameplay(self)
 
@@ -49,4 +51,5 @@ class App:
     if self.state == STATE_GAMEPLAY:
       self.gameplay.draw()
 
-App()
+if __name__ == "__main__":
+  App()
