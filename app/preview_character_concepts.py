@@ -21,54 +21,14 @@ CONCEPTS_DIR = ROOT_DIR / "assets" / "CharacterIdeas" / "concepts"
 STRIP_PATH = CONCEPTS_DIR / "all_8_concepts_strip_256x32.png"
 
 CHARACTERS_INFO = [
-    {
-        "id": 1,
-        "name": "Trenchcoat Drifter",
-        "archetype": "Cyberpunk Noir Alpinist",
-        "tagline": "Sobretudo marrom clássico, visor ciano e coldre tático",
-    },
-    {
-        "id": 2,
-        "name": "Exo-Rig Heavy",
-        "archetype": "Industrial Welder & Loader",
-        "tagline": "Exoesqueleto amarelo, pistões hidráulicos e botijas de resina",
-    },
-    {
-        "id": 3,
-        "name": "Cyber-Ninja",
-        "archetype": "Stealth Infiltrator & Recon",
-        "tagline": "Nanofibra esguia preta/roxa, óticas duplas e cachecol digital",
-    },
-    {
-        "id": 4,
-        "name": "Hazmat Bio-Cleaner",
-        "archetype": "Toxic Smog & Acid Specialist",
-        "tagline": "Traje hermético amarelo, visor esférico e tanque químico",
-    },
-    {
-        "id": 5,
-        "name": "Street Punk",
-        "archetype": "Underground Neon Rebel",
-        "tagline": "Moicano rosa neon, colete jeans e braço cibernético cromado",
-    },
-    {
-        "id": 6,
-        "name": "Apex Security Enforcer",
-        "archetype": "Corporate Tactical Guard",
-        "tagline": "Placas cerâmicas brancas, sensor vermelho e insígnia corporativa",
-    },
-    {
-        "id": 7,
-        "name": "Synth Unit Model-04",
-        "archetype": "Autonomous Maintenance Android",
-        "tagline": "Chassi robótico ardósia, três lentes óticas e linhas de energia",
-    },
-    {
-        "id": 8,
-        "name": "Aero-Courier",
-        "archetype": "High-Altitude Rooftop Acrobat",
-        "tagline": "Jaqueta bomber neon laranja, propulsor iônico e óculos retrô",
-    },
+    {"id": 1, "name": "Kiko", "archetype": "Chibi Mascote", "tagline": "Cabecao, capacete de obra e rodo; contorno roxo"},
+    {"id": 2, "name": "Vance", "archetype": "Noir Realista", "tagline": "Perfil esguio, sobretudo e cachecol vermelho; selout"},
+    {"id": 3, "name": "Pip", "archetype": "Game Boy DMG", "tagline": "4 tons de verde, capuz e tanque de solvente"},
+    {"id": 4, "name": "Rook", "archetype": "NES 8-bit", "tagline": "3 cores + preto, capacete e braco-canhao de gancho"},
+    {"id": 5, "name": "Vex", "archetype": "Silhueta Neon", "tagline": "Corpo escuro com rim light magenta/ciano"},
+    {"id": 6, "name": "Bolt", "archetype": "Mech Cartoon", "tagline": "Piloto na capsula de vidro, garras gigantes"},
+    {"id": 7, "name": "Nul", "archetype": "Andarilho Minimalista", "tagline": "Capa triangular chapada, um olho brilhante"},
+    {"id": 8, "name": "Rizzo", "archetype": "Cyber-Guaxinim 16-bit", "tagline": "Moletom, oculos ambar e cauda listrada"},
 ]
 
 
