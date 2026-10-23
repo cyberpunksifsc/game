@@ -71,6 +71,145 @@ def set_pixels(dst: list[list[str]], coords: list[tuple[int, int, str]]):
                 dst[y][x] = ch
 
 
+def draw_articulated_leg(
+    dst: list[list[str]],
+    hip_x: int,
+    pose: str = "straight",
+    dy: int = 0,
+):
+    """Desenha uma perna de cavaleiro em 2 segmentos (coxa -> junta do joelho -> canela/bota).
+
+    Poses suportadas:
+      - 'straight': perna reta padrão (IDLE)
+      - 'bend_left_soft': joelho avança à esquerda (-1), canela/bota dobra para trás/cima (< suave)
+      - 'bend_left_deep': joelho avança à esquerda (-2) e sobe, bota recolhida na diagonal para trás (< forte)
+      - 'kick_left': perna chutando na diagonal para a esquerda/cima
+      - 'bend_right_soft': joelho avança à direita (+1), canela/bota dobra para trás/cima (> suave)
+      - 'bend_right_deep': joelho avança à direita (+2) e sobe, bota recolhida para trás (> forte)
+      - 'kick_right': perna chutando na diagonal para a direita/cima
+    """
+    y0 = 17 + dy
+
+    if pose == "straight":
+        # Coxa (Y=17), Joelho (Y=18), Canela (Y=19), Bota (Y=20..21)
+        set_pixels(
+            dst,
+            [
+                (hip_x, y0, "3"), (hip_x + 1, y0, "B"),
+                (hip_x, y0 + 1, "3"), (hip_x + 1, y0 + 1, "B"),
+                (hip_x - 1, y0 + 2, "3"), (hip_x, y0 + 2, "B"), (hip_x + 1, y0 + 2, "B"),
+                (hip_x - 2, y0 + 3, "A"), (hip_x - 1, y0 + 3, "A"), (hip_x, y0 + 3, "A"), (hip_x + 1, y0 + 3, "A"),
+                (hip_x - 2, y0 + 4, "9"), (hip_x - 1, y0 + 4, "9"), (hip_x, y0 + 4, "A"), (hip_x + 1, y0 + 4, "A"),
+            ],
+        )
+
+    elif pose == "bend_left_soft":
+        # Chevron '<' suave: coxa desce para a esquerda até a patela dourada (y0+2),
+        # canela e bota dobram na diagonal para trás/direita (y0+3..y0+5)
+        set_pixels(
+            dst,
+            [
+                # Quadril / Coxa alta (Y=y0)
+                (hip_x, y0, "3"), (hip_x + 1, y0, "B"),
+                # Coxa média avançando à esquerda (Y=y0+1)
+                (hip_x - 1, y0 + 1, "3"), (hip_x, y0 + 1, "B"),
+                # Junta do joelho (vértice '<' projetado à esquerda com patela dourada 'A'!) (Y=y0+2)
+                (hip_x - 2, y0 + 2, "A"), (hip_x - 1, y0 + 2, "B"),
+                # Canela dobrando na diagonal para trás/direita (Y=y0+3)
+                (hip_x - 1, y0 + 3, "3"), (hip_x, y0 + 3, "B"),
+                # Bota recolhida atrás do joelho (Y=y0+4..y0+5)
+                (hip_x, y0 + 4, "A"), (hip_x + 1, y0 + 4, "A"),
+                (hip_x + 1, y0 + 5, "9"), (hip_x + 2, y0 + 5, "9"),
+            ],
+        )
+
+    elif pose == "bend_left_deep":
+        # Chevron '<' bem dobrado e alto: joelho sobe e avança 3px à esquerda (y0+1),
+        # canela e bota dobram acentuadamente para trás/direita (y0+2..y0+4)!
+        set_pixels(
+            dst,
+            [
+                # Coxa saindo do quadril para a esquerda (Y=y0)
+                (hip_x - 1, y0, "3"), (hip_x, y0, "B"),
+                # Joelho alto bem dobrado (vértice '<' agudo com joelheira dourada 'A') (Y=y0+1)
+                (hip_x - 3, y0 + 1, "A"), (hip_x - 2, y0 + 1, "B"),
+                # Canela voltando na diagonal para trás/direita (Y=y0+2)
+                (hip_x - 2, y0 + 2, "3"), (hip_x - 1, y0 + 2, "B"),
+                # Bota recolhida atrás na diagonal (Y=y0+3..y0+4)
+                (hip_x - 1, y0 + 3, "A"), (hip_x, y0 + 3, "A"),
+                (hip_x, y0 + 4, "9"), (hip_x + 1, y0 + 4, "9"),
+            ],
+        )
+
+    elif pose == "kick_left":
+        # Joelho alto à esquerda com chute/gancho dobrado
+        set_pixels(
+            dst,
+            [
+                (hip_x - 1, y0, "3"), (hip_x, y0, "B"),
+                # Joelho erguido à frente
+                (hip_x - 2, y0 + 1, "3"), (hip_x - 1, y0 + 1, "B"),
+                (hip_x - 3, y0 + 2, "A"), (hip_x - 2, y0 + 2, "B"),
+                # Canela/bota dobrada para trás do joelho
+                (hip_x - 2, y0 + 3, "A"), (hip_x - 1, y0 + 3, "A"),
+                (hip_x - 1, y0 + 4, "9"), (hip_x, y0 + 4, "9"),
+            ],
+        )
+
+    elif pose == "bend_right_soft":
+        # Chevron '>' suave: coxa desce para a direita até a patela dourada (y0+2),
+        # canela e bota dobram na diagonal para trás/esquerda (y0+3..y0+5)
+        set_pixels(
+            dst,
+            [
+                # Quadril / Coxa alta (Y=y0)
+                (hip_x, y0, "3"), (hip_x + 1, y0, "B"),
+                # Coxa média avançando à direita (Y=y0+1)
+                (hip_x + 1, y0 + 1, "3"), (hip_x + 2, y0 + 1, "B"),
+                # Junta do joelho (vértice '>' projetado à direita com patela dourada 'A'!) (Y=y0+2)
+                (hip_x + 2, y0 + 2, "B"), (hip_x + 3, y0 + 2, "A"),
+                # Canela dobrando na diagonal para trás/esquerda (Y=y0+3)
+                (hip_x + 1, y0 + 3, "3"), (hip_x + 2, y0 + 3, "B"),
+                # Bota recolhida atrás do joelho (Y=y0+4..y0+5)
+                (hip_x, y0 + 4, "A"), (hip_x + 1, y0 + 4, "A"),
+                (hip_x - 1, y0 + 5, "9"), (hip_x, y0 + 5, "9"),
+            ],
+        )
+
+    elif pose == "bend_right_deep":
+        # Chevron '>' bem dobrado e alto: joelho sobe e avança à direita (y0+1),
+        # canela e bota dobram acentuadamente para trás/esquerda (y0+2..y0+4)!
+        set_pixels(
+            dst,
+            [
+                # Coxa saindo do quadril para a direita (Y=y0)
+                (hip_x + 1, y0, "3"), (hip_x + 2, y0, "B"),
+                # Joelho alto bem dobrado (vértice '>' agudo com joelheira dourada 'A') (Y=y0+1)
+                (hip_x + 3, y0 + 1, "B"), (hip_x + 4, y0 + 1, "A"),
+                # Canela voltando na diagonal para trás/esquerda (Y=y0+2)
+                (hip_x + 2, y0 + 2, "3"), (hip_x + 3, y0 + 2, "B"),
+                # Bota recolhida atrás na diagonal (Y=y0+3..y0+4)
+                (hip_x + 1, y0 + 3, "A"), (hip_x + 2, y0 + 3, "A"),
+                (hip_x, y0 + 4, "9"), (hip_x + 1, y0 + 4, "9"),
+            ],
+        )
+
+    elif pose == "kick_right":
+        # Joelho projetado à direita com canela dobrada em impulso
+        set_pixels(
+            dst,
+            [
+                (hip_x + 1, y0, "3"), (hip_x + 2, y0, "B"),
+                (hip_x + 2, y0 + 1, "3"), (hip_x + 3, y0 + 1, "B"),
+                (hip_x + 3, y0 + 2, "B"), (hip_x + 4, y0 + 2, "A"),
+                (hip_x + 2, y0 + 3, "A"), (hip_x + 3, y0 + 3, "A"),
+                (hip_x + 1, y0 + 4, "9"), (hip_x + 2, y0 + 4, "9"),
+            ],
+        )
+    else:
+        raise ValueError(f"Pose de perna desconhecida: {pose}")
+
+
 def compose_pose(
     head_dx: int = 0,
     head_dy: int = 0,
@@ -81,6 +220,8 @@ def compose_pose(
     left_leg_dy: int = 0,
     right_leg_dx: int = 0,
     right_leg_dy: int = 0,
+    left_leg_pose: str | None = None,
+    right_leg_pose: str | None = None,
     mop_dx: int = 0,
     mop_dy: int = 0,
     keep_harness_fixed: bool = True,
@@ -88,19 +229,24 @@ def compose_pose(
     visor_glint: bool = False,
     lance_forward: bool = False,
 ) -> list[str]:
-    """Compõe um frame 32x32 do Sir Mop articulando cabeça, tronco, braços, pernas e esfregão."""
+    """Compõe um frame 32x32 do Sir Mop articulando cabeça, tronco, braços, joelhos e esfregão."""
     g = empty_grid()
     base = SIR_MOP_INNER_32
 
-    # 1. Pernas (Y=17..21): perna esquerda X=10..13, perna direita X=15..18
-    blit_region(base, g, 10, 17, 13, 21, dx=left_leg_dx, dy=left_leg_dy)
-    blit_region(base, g, 15, 17, 18, 21, dx=right_leg_dx, dy=right_leg_dy)
+    # 1. Pernas: usa articulação de joelho dobrado quando especificada, ou deslocamento vertical padrão
+    if left_leg_pose is not None:
+        draw_articulated_leg(g, hip_x=11 + left_leg_dx, pose=left_leg_pose, dy=left_leg_dy)
+    else:
+        blit_region(base, g, 10, 17, 13, 21, dx=left_leg_dx, dy=left_leg_dy)
+        if left_leg_dy > 0:
+            set_pixels(g, [(12 + left_leg_dx, 17, "3"), (13 + left_leg_dx, 17, "B")])
 
-    # Preenche conexão da coxa se a perna desceu 1px
-    if left_leg_dy > 0:
-        set_pixels(g, [(12 + left_leg_dx, 17, "3"), (13 + left_leg_dx, 17, "B")])
-    if right_leg_dy > 0:
-        set_pixels(g, [(15 + right_leg_dx, 17, "3"), (16 + right_leg_dx, 17, "B")])
+    if right_leg_pose is not None:
+        draw_articulated_leg(g, hip_x=16 + right_leg_dx, pose=right_leg_pose, dy=right_leg_dy)
+    else:
+        blit_region(base, g, 15, 17, 18, 21, dx=right_leg_dx, dy=right_leg_dy)
+        if right_leg_dy > 0:
+            set_pixels(g, [(15 + right_leg_dx, 17, "3"), (16 + right_leg_dx, 17, "B")])
 
     # 2. Tronco central (X=11..17, Y=12..16)
     blit_region(base, g, 11, 12, 17, 16, dx=torso_dx, dy=torso_dy)
@@ -205,42 +351,161 @@ def build_climb_down_frames() -> list[Image.Image]:
 
 
 def build_swing_left_frames() -> list[Image.Image]:
-    """Linha 3: SWING_LEFT (4 frames) — impulso pendular para a esquerda."""
+    """Linha 3: SWING_LEFT (4 frames) — impulso pendular para a esquerda com joelhos dobrados (<)."""
     poses = [
-        compose_pose(head_dx=-1, left_leg_dx=-1, right_leg_dx=-1, mop_dx=0),
-        compose_pose(head_dx=-1, torso_dx=-1, left_leg_dx=-2, left_leg_dy=-1, right_leg_dx=-1, mop_dx=0, mop_dy=-1),
-        compose_pose(head_dx=-1, torso_dx=-1, left_leg_dx=-2, right_leg_dx=-2, right_leg_dy=-1, mop_dx=0),
-        compose_pose(head_dx=0, left_leg_dx=-1, right_leg_dx=-1, mop_dx=0),
+        # F0: Inicia flexão dos joelhos para a esquerda (< suave)
+        compose_pose(
+            head_dx=-1,
+            left_leg_pose="bend_left_soft",
+            right_leg_pose="bend_left_soft",
+            mop_dx=0,
+        ),
+        # F1: Dobra máxima dos joelhos (< forte), canelas e botas recolhidas para trás/cima
+        compose_pose(
+            head_dx=-1,
+            torso_dx=-1,
+            left_leg_pose="bend_left_deep",
+            right_leg_pose="bend_left_deep",
+            mop_dx=0,
+            mop_dy=-1,
+        ),
+        # F2: Impulso no pico esquerdo — perna esquerda chuta/flexiona alto enquanto a direita mantém o joelho dobrado
+        compose_pose(
+            head_dx=-1,
+            torso_dx=-1,
+            left_leg_pose="kick_left",
+            right_leg_pose="bend_left_deep",
+            mop_dx=0,
+        ),
+        # F3: Retorno com joelhos semidobrados
+        compose_pose(
+            head_dx=0,
+            left_leg_pose="bend_left_soft",
+            right_leg_pose="bend_left_soft",
+            mop_dx=0,
+        ),
     ]
     return [render_sir_mop(p) for p in poses]
 
 
 def build_swing_right_frames() -> list[Image.Image]:
-    """Linha 4: SWING_RIGHT (4 frames) — impulso pendular para a direita com esfregão em riste!"""
+    """Linha 4: SWING_RIGHT (4 frames) — impulso pendular para a direita com joelhos dobrados (>) e esfregão em riste!"""
     poses = [
-        compose_pose(head_dx=1, left_leg_dx=1, right_leg_dx=1, mop_dx=1, mop_dy=-1),
-        compose_pose(head_dx=1, torso_dx=1, left_leg_dx=1, right_leg_dx=2, right_leg_dy=-1, mop_dx=1, mop_dy=-1, lance_forward=True),
-        compose_pose(head_dx=1, torso_dx=1, left_leg_dx=2, left_leg_dy=-1, right_leg_dx=2, mop_dx=1, lance_forward=True),
-        compose_pose(head_dx=1, left_leg_dx=1, right_leg_dx=1, mop_dx=1),
+        # F0: Inicia flexão dos joelhos para a direita (> suave) e ergue o esfregão para não cobrir o joelho
+        compose_pose(
+            head_dx=1,
+            left_leg_pose="bend_right_soft",
+            right_leg_pose="bend_right_soft",
+            mop_dx=2,
+            mop_dy=-2,
+        ),
+        # F1: Dobra máxima dos joelhos (> forte), canelas e botas recolhidas para trás/cima + lança em riste
+        compose_pose(
+            head_dx=1,
+            torso_dx=1,
+            left_leg_pose="bend_right_deep",
+            right_leg_pose="bend_right_deep",
+            mop_dx=1,
+            mop_dy=-1,
+            lance_forward=True,
+        ),
+        # F2: Impulso no pico direito — joelho direito projetado à frente e esquerdo dobrado (>)
+        compose_pose(
+            head_dx=1,
+            torso_dx=1,
+            left_leg_pose="bend_right_deep",
+            right_leg_pose="kick_right",
+            mop_dx=1,
+            lance_forward=True,
+        ),
+        # F3: Retorno com joelhos semidobrados e esfregão alto liberando a silhueta dos joelhos
+        compose_pose(
+            head_dx=1,
+            left_leg_pose="bend_right_soft",
+            right_leg_pose="bend_right_soft",
+            mop_dx=2,
+            mop_dy=-2,
+        ),
     ]
     return [render_sir_mop(p) for p in poses]
 
 
 def build_airborne_frames() -> list[Image.Image]:
-    """Folha de Salto / Voo Livre (6 frames, 192x32) — salto acrobático entre âncoras."""
+    """Folha de Salto / Voo Livre (6 frames, 192x32) — salto acrobático entre âncoras com joelhos flexionados."""
     poses = [
-        # Frame 0: Impulso de decolagem
-        compose_pose(head_dy=-1, torso_dy=-1, left_leg_dy=-1, right_leg_dy=-2, mop_dy=-2, keep_harness_fixed=False),
-        # Frame 1: Subida no ar com lança-esfregão em riste
-        compose_pose(head_dx=1, head_dy=-2, torso_dy=-2, left_leg_dx=-1, left_leg_dy=-2, right_leg_dx=1, right_leg_dy=-3, mop_dx=1, mop_dy=-2, keep_harness_fixed=False, lance_forward=True),
-        # Frame 2: Ápice do salto (pose heroica)
-        compose_pose(head_dx=1, head_dy=-2, torso_dy=-2, left_leg_dx=-1, left_leg_dy=-3, right_leg_dx=1, right_leg_dy=-2, mop_dx=1, mop_dy=-3, keep_harness_fixed=False, lance_forward=True, visor_glint=True),
-        # Frame 3: Início da descida aérea, esfregão erguido
-        compose_pose(head_dx=1, head_dy=-1, torso_dy=-1, left_leg_dy=-2, right_leg_dx=1, right_leg_dy=-1, mop_dx=1, mop_dy=-2, keep_harness_fixed=False, bristles_flare_up=True),
-        # Frame 4: Preparando reconexão (perna estendida à frente)
-        compose_pose(head_dy=-1, left_leg_dx=-1, left_leg_dy=-1, right_leg_dx=1, right_leg_dy=0, mop_dy=-1, keep_harness_fixed=False, bristles_flare_up=True),
+        # Frame 0: Impulso de decolagem (joelhos dobrando)
+        compose_pose(
+            head_dy=-1,
+            torso_dy=-1,
+            left_leg_dy=-1,
+            right_leg_dy=-1,
+            left_leg_pose="bend_right_soft",
+            right_leg_pose="bend_right_deep",
+            mop_dx=2,
+            mop_dy=-3,
+            keep_harness_fixed=False,
+        ),
+        # Frame 1: Subida no ar com ambos os joelhos bem dobrados (>) e lança em riste
+        compose_pose(
+            head_dx=1,
+            head_dy=-2,
+            torso_dy=-2,
+            left_leg_dy=-2,
+            right_leg_dy=-2,
+            left_leg_pose="bend_right_deep",
+            right_leg_pose="bend_right_deep",
+            mop_dx=1,
+            mop_dy=-2,
+            keep_harness_fixed=False,
+            lance_forward=True,
+        ),
+        # Frame 2: Ápice do salto (perna da frente flexionada alta, perna de trás dobrada no joelho)
+        compose_pose(
+            head_dx=1,
+            head_dy=-2,
+            torso_dy=-2,
+            left_leg_dy=-2,
+            right_leg_dy=-2,
+            left_leg_pose="bend_right_deep",
+            right_leg_pose="kick_right",
+            mop_dx=1,
+            mop_dy=-3,
+            keep_harness_fixed=False,
+            lance_forward=True,
+            visor_glint=True,
+        ),
+        # Frame 3: Início da descida aérea com joelhos flexionados e esfregão erguido
+        compose_pose(
+            head_dx=1,
+            head_dy=-1,
+            torso_dy=-1,
+            left_leg_dy=-1,
+            right_leg_dy=-1,
+            left_leg_pose="bend_right_soft",
+            right_leg_pose="kick_right",
+            mop_dx=2,
+            mop_dy=-3,
+            keep_harness_fixed=False,
+            bristles_flare_up=True,
+        ),
+        # Frame 4: Preparando reconexão (joelhos amortecendo)
+        compose_pose(
+            head_dy=-1,
+            left_leg_pose="bend_right_soft",
+            right_leg_pose="bend_right_soft",
+            mop_dx=2,
+            mop_dy=-2,
+            keep_harness_fixed=False,
+            bristles_flare_up=True,
+        ),
         # Frame 5: Amortecendo encaixe no link
-        compose_pose(head_dy=0, left_leg_dy=0, right_leg_dy=-1, mop_dy=0, keep_harness_fixed=False),
+        compose_pose(
+            head_dy=0,
+            left_leg_dy=0,
+            right_leg_dy=-1,
+            mop_dy=0,
+            keep_harness_fixed=False,
+        ),
     ]
     return [render_sir_mop(p) for p in poses]
 
