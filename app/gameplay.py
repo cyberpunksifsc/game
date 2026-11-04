@@ -122,6 +122,7 @@ class Gameplay:
             self.camera_y,
             self.app.WIDTH,
             self.app.HEIGHT,
+            building=self.building,
         )
 
         # Condição 1 de Game Over: queda fatal (o alarme já é tocado pelo sistema de âncoras)

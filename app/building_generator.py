@@ -10,6 +10,9 @@ WINDOW_STATE_BROKEN = "BROKEN"
 CLEAN_FRAMES_REQUIRED = 45   # 1.5s * 30 FPS
 REPAIR_FRAMES_REQUIRED = 105 # 3.5s * 30 FPS
 
+# Duração da animação de estilhaçamento por bala perdida (~0.6s a 30 FPS)
+SHATTER_ANIM_FRAMES = 18
+
 
 class Window:
     """Representa um painel de vidro na fachada do arranha-céu Apex-01."""
@@ -25,6 +28,7 @@ class Window:
         self.state = initial_state
         self.work_frames = 0.0
         self.pulse_timer = random.randint(0, 60)
+        self.shatter_timer = 0
 
     @property
     def max_frames(self) -> int:
@@ -51,6 +55,44 @@ class Window:
             self.state = WINDOW_STATE_CLEAN
             return True
         return False
+
+    def shatter(self) -> bool:
+        """Quebra uma janela limpa por impacto de projétil. Retorna True se quebrou."""
+        if self.state != WINDOW_STATE_CLEAN:
+            return False
+        self.state = WINDOW_STATE_BROKEN
+        self.work_frames = 0.0
+        self.shatter_timer = SHATTER_ANIM_FRAMES
+        return True
+
+    def contains_point(self, px: float, py: float) -> bool:
+        return self.x <= px <= self.x + self.w and self.y <= py <= self.y + self.h
+
+    def draw_shatter_effect(self):
+        """Animação de estilhaçamento: flash branco, rachaduras crescendo e moldura piscando."""
+        if self.shatter_timer <= 0:
+            return
+        wx = int(self.x)
+        wy = int(self.y)
+        elapsed = SHATTER_ANIM_FRAMES - self.shatter_timer
+
+        # 1. Flash branco do impacto nos primeiros frames
+        if elapsed < 3:
+            pyxel.rect(wx + 2, wy + 2, self.w - 4, self.h - 4, 7)
+
+        # 2. Rachaduras radiais crescendo a partir do furo do projétil
+        cx, cy = wx + 14, wy + 14
+        growth = min(1.0, (elapsed + 1) / (SHATTER_ANIM_FRAMES * 0.6))
+        for ex, ey in ((wx + 2, wy + 2), (wx + self.w - 3, wy + 3), (wx + 3, wy + self.h - 3),
+                       (wx + self.w - 3, wy + self.h - 4), (wx + 16, wy + 1)):
+            pyxel.line(cx, cy, int(cx + (ex - cx) * growth), int(cy + (ey - cy) * growth), 7)
+        pyxel.circ(cx, cy, 1, 8)
+
+        # 3. Moldura piscando em vermelho/laranja (alerta)
+        frame_col = 8 if (self.shatter_timer // 2) % 2 == 0 else 9
+        pyxel.rectb(wx - 1, wy - 1, self.w + 2, self.h + 2, frame_col)
+
+        self.shatter_timer -= 1
 
     def draw(self, camera_x: float, camera_y: float, is_target: bool = False):
         """Desenha a janela e seu estado visual com tiles e texturas."""
@@ -121,6 +163,9 @@ class Window:
             fill_w = int((bar_w - 2) * self.progress)
             if fill_w > 0:
                 pyxel.rect(bx + 1, by + 1, fill_w, bar_h - 2, fill_col)
+
+        # Animação de estilhaçamento por bala perdida (por cima de tudo)
+        self.draw_shatter_effect()
 
 
 class BuildingGenerator:
@@ -230,6 +275,14 @@ class BuildingGenerator:
                     best_win = win
 
         return best_win
+
+    def find_window_at(self, px: float, py: float) -> Window | None:
+        """Retorna a janela que contém o ponto (px, py), ou None."""
+        for win in self.windows:
+            # Filtro rápido por altura antes do teste completo
+            if win.y <= py <= win.y + win.h and win.contains_point(px, py):
+                return win
+        return None
 
     def draw_facade_beams(self, camera_y: float, screen_height: float):
         """Desenha as vigas metálicas horizontais e colunas de sustentação visíveis."""

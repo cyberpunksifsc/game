@@ -52,6 +52,9 @@ class StrayBullet:
         self.max_distance = 600.0
         self.distance_traveled = 0.0
 
+        # Uma bala só sorteia a chance de estilhaçar vidro uma única vez
+        self.glass_rolled = False
+
     def update(self) -> bool:
         """Atualiza a telegrafagem e a física de voo da bala. Retorna False se o projétil deve ser removido."""
         if self.phase == PHASE_TELEGRAPH:

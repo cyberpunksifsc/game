@@ -161,3 +161,10 @@ def test_hazard_spawner_integration_and_reset():
     spawner.reset()
     assert len(spawner.bullets) == 0
     assert all(d.state == DRONE_STATE_PATROL for d in spawner.drone_manager.drones)
+
+
+def test_first_drone_is_closer_to_spawn():
+    # Distância de subida até o primeiro drone reduzida em 20% (350px -> 280px)
+    spawn_y = 1800.0
+    assert spawn_y - DEFAULT_DRONE_ALTITUDES[0] <= 280.0
+    assert DEFAULT_DRONE_ALTITUDES == sorted(DEFAULT_DRONE_ALTITUDES, reverse=True)

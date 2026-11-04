@@ -2,12 +2,17 @@ import math
 import random
 import pyxel
 from stray_bullet import StrayBullet, PHASE_FLYING, PHASE_TELEGRAPH
-from player_cleaning_system import Particle
+from player_cleaning_system import Particle, FloatingScore
 from patrol_drone_ai import PatrolDroneManager
+from building_generator import WINDOW_STATE_CLEAN
 
 SOUND_LASER_WARN = 10
 SOUND_BULLET_FIRE = 11
 SOUND_BULLET_HIT = 12
+SOUND_GLASS_SHATTER = 13
+
+# Chance (por bala) de estilhaçar a primeira janela limpa que atravessar
+BULLET_WINDOW_BREAK_CHANCE = 0.06
 
 # Constantes de balanceamento da curva de dificuldade dinâmica (Semanas 10-12)
 BASE_MIN_INTERVAL = 110
@@ -57,6 +62,8 @@ class HazardSpawner:
             pyxel.sounds[11].set("f2c2a1", "n", "753", "s", 3)
             # Som 12: Impacto de projétil / ricochete perfurante no traje
             pyxel.sounds[12].set("c1d1c1d1", "n", "7641", "f", 5)
+            # Som 13: Vidro estilhaçando (estalo de ruído agudo descendo)
+            pyxel.sounds[13].set("c4a3f3d3c3", "n", "76531", "f", 4)
         except BaseException:
             pass
 
@@ -166,6 +173,7 @@ class HazardSpawner:
         camera_y: float,
         screen_w: float = 320.0,
         screen_h: float = 180.0,
+        building=None,
     ):
         """Atualiza disparos, colisões e partículas de impacto."""
         # Atualiza partículas de faíscas existentes
@@ -239,6 +247,9 @@ class HazardSpawner:
                     # A bala foi destruída pelo impacto
                     continue
 
+                # Bala perdida que atravessa janela limpa pode estilhaçá-la (chance baixa)
+                self._try_shatter_window(bullet, building, cleaning_system)
+
             remaining_bullets.append(bullet)
 
         self.bullets = remaining_bullets
@@ -248,6 +259,39 @@ class HazardSpawner:
         if drone_bullets:
             self.bullets.extend(drone_bullets)
             self.play_sound(SOUND_LASER_WARN)
+
+    def _try_shatter_window(self, bullet, building, cleaning_system=None) -> bool:
+        """Sorteia (uma vez por bala) se o projétil estilhaça a janela limpa que atravessa."""
+        if building is None or bullet.glass_rolled:
+            return False
+        win = building.find_window_at(bullet.x, bullet.y)
+        if win is None or win.state != WINDOW_STATE_CLEAN:
+            return False
+
+        bullet.glass_rolled = True
+        if random.random() >= BULLET_WINDOW_BREAK_CHANCE:
+            return False
+        if not win.shatter():
+            return False
+
+        self.play_sound(SOUND_GLASS_SHATTER)
+
+        # Estilhaços de vidro caindo da janela
+        for _ in range(14):
+            self.sparks.append(Particle(
+                x=bullet.x + random.uniform(-4, 4),
+                y=bullet.y + random.uniform(-4, 4),
+                vx=random.uniform(-1.8, 1.8) + bullet.vx * 0.15,
+                vy=random.uniform(-1.6, 0.6),
+                color=random.choice([7, 12, 6, 13]),
+                life=random.randint(16, 26),
+            ))
+
+        # Texto flutuante avisando o jogador
+        popups = getattr(cleaning_system, "popups", None)
+        if popups is not None:
+            popups.append(FloatingScore(win.x + win.w / 2, win.y - 6, "VIDRO!", 8))
+        return True
 
     def draw(self, camera_x: float, camera_y: float):
         """Renderiza todas as miras laser, balas, drones e faíscas em coordenadas de mundo."""
