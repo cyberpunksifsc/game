@@ -19,6 +19,8 @@ STATE_ANCHORED = "ANCHORED"   # Conectado à corda ativa
 STATE_AIRBORNE = "AIRBORNE"   # Em salto / queda livre após desconexão
 STATE_FATAL_FALL = "FATAL_FALL"  # Game over por queda
 
+SHOOT_ANIM_TICKS = 14         # Duração da animação de disparo/recolhimento do gancho
+
 # Parâmetros de Balanço e Força de Movimento (mais lento e controlado)
 SWING_FORCE = 0.0016          # Força suave de impulso do alpinista
 MAX_ANGULAR_VEL = 0.038       # Velocidade angular máxima (impede balanços excessivos)
@@ -158,6 +160,7 @@ class PlayerAnchorSystem:
         self.feedback_msg = ""
         self.feedback_timer = 0
         self.feedback_color = 7
+        self.shoot_timer = 0
 
     def set_feedback(self, msg: str, duration: int = 45, color: int = 7):
         self.feedback_msg = msg
@@ -229,6 +232,7 @@ class PlayerAnchorSystem:
 
         new_anchor = Anchor(target_x, target_y, is_active=False)
         self.anchors.append(new_anchor)
+        self.shoot_timer = SHOOT_ANIM_TICKS
         self.play_sound(0)
         return True
 
@@ -252,6 +256,7 @@ class PlayerAnchorSystem:
             target = min(inactive_anchors, key=lambda a: math.hypot(hx - a.x, hy - a.y))
 
         self.anchors.remove(target)
+        self.shoot_timer = SHOOT_ANIM_TICKS
         self.play_sound(1)
         return True
 
@@ -335,6 +340,9 @@ class PlayerAnchorSystem:
 
         if self.feedback_timer > 0:
             self.feedback_timer -= 1
+
+        if self.shoot_timer > 0:
+            self.shoot_timer -= 1
 
         if self.state == STATE_ANCHORED:
             self._update_anchored(camera_x, camera_y)

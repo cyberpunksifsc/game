@@ -11,6 +11,7 @@ from player_anchor_system import (
 )
 
 from touch_controls import TouchControls
+from player_animation import select_frame
 
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
@@ -41,6 +42,10 @@ class Player:
         self.anim_timer = 0
         self.anim_row = 0
         self.current_frame = 0
+        self.sprite_u = 0
+        self.sprite_v = 0
+        self.hit_timer = 0
+        self.work_action = ""
 
         # Flag para controlar exibição do HUD de ajuda dos controles
         self.show_controls_help = True
@@ -90,6 +95,14 @@ class Player:
         if swing_sheet_path.exists():
             pyxel.images[2].load(0, 160, str(swing_sheet_path))
 
+        # 3. Spritesheet de ações (128x160) em (128, 0) no banco 2: CLEAN, REPAIR, SHOOT, HIT, PANIC
+        actions_sheet_path = BASE_DIR / "assets" / "CharacterIdeas" / "character_actions_sheet.png"
+        if not actions_sheet_path.exists():
+            actions_sheet_path = ROOT_DIR / "assets" / "CharacterIdeas" / "character_actions_sheet.png"
+
+        if actions_sheet_path.exists():
+            pyxel.images[2].load(128, 0, str(actions_sheet_path))
+
     def update(self, camera_x: float = 0.0, camera_y: float = 0.0):
         """Atualiza a simulação física, inputs e animações."""
         self.anim_timer += 1
@@ -104,28 +117,18 @@ class Player:
         # Atualiza a física de ancoragem, salto e links com a câmera
         self.anchor_system.update(camera_x=camera_x, camera_y=camera_y, screen_height=self.app.HEIGHT)
 
-        # Seleciona linha do spritesheet e frames com base na ação do sistema
-        action = self.anchor_system.action
-        if self.anchor_system.state == STATE_AIRBORNE:
-            # Estado no ar: usa linha de voo/salto carregada em Y=160
-            self.anim_row = -1  # flag indicando linha especial de salto
-            self.current_frame = (self.anim_timer // 5) % 6
-        elif action == "CLIMB_UP":
-            self.anim_row = 1
-            self.current_frame = (self.anim_timer // 6) % 4
-        elif action == "CLIMB_DOWN":
-            self.anim_row = 2
-            self.current_frame = (self.anim_timer // 6) % 4
-        elif action == "SWING_LEFT":
-            self.anim_row = 3
-            self.current_frame = (self.anim_timer // 6) % 4
-        elif action == "SWING_RIGHT":
-            self.anim_row = 4
-            self.current_frame = (self.anim_timer // 6) % 4
-        else:
-            # IDLE (linha 0)
-            self.anim_row = 0
-            self.current_frame = (self.anim_timer // 8) % 4
+        # Seleciona coordenadas (u, v) do frame com base em prioridades de estado e ação
+        self.sprite_u, self.sprite_v = select_frame(
+            state=self.anchor_system.state,
+            action=self.anchor_system.action,
+            vy=self.anchor_system.vy,
+            anim_timer=self.anim_timer,
+            hit_timer=self.hit_timer,
+            shoot_timer=self.anchor_system.shoot_timer,
+            work_action=self.work_action,
+        )
+        self.current_frame = (self.sprite_u % 128) // 32
+        self.anim_row = -1 if self.sprite_v == 160 else (self.sprite_v // 32)
 
     def draw_anchors(self, camera_x: float = 0.0, camera_y: float = 0.0):
         """Desenha todas as âncoras na fachada e destaca possíveis alvos de link."""
@@ -244,16 +247,7 @@ class Player:
         blink_hidden = is_invulnerable and ((pyxel.frame_count // 2) % 2 == 0)
 
         if self.anchor_system.state != STATE_FATAL_FALL and not blink_hidden:
-            if self.anim_row == -1:
-                # Spritesheet de salto/voo no ar (em Y=160 no Banco 2)
-                u = self.current_frame * 32
-                v = 160
-                pyxel.blt(px, py, 2, u, v, 32, 32, 0)
-            else:
-                # Spritesheet do trenchcoat (IDLE, CLIMB, SWING)
-                u = self.current_frame * 32
-                v = self.anim_row * 32
-                pyxel.blt(px, py, 2, u, v, 32, 32, 0)
+            pyxel.blt(px, py, 2, self.sprite_u, self.sprite_v, 32, 32, 0)
 
         # 2. Interface HUD (fixa na tela com câmera resetada em (0, 0))
         pyxel.camera(0, 0)

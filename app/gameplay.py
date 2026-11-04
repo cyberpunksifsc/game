@@ -109,6 +109,10 @@ class Gameplay:
 
         # Estabiliza o alpinista se estiver ativamente limpando/reparando
         self.player.anchor_system.is_working = self.cleaning_system.is_cleaning
+        self.player.hit_timer = self.stats.hit_anim_timer
+        self.player.work_action = (
+            self.cleaning_system.current_action_type if self.cleaning_system.is_cleaning else ""
+        )
 
         # Atualiza a movimentação e âncoras considerando a posição atual da câmera
         self.player.update(self.camera_x, self.camera_y)

@@ -161,24 +161,28 @@ class PlayerCleaningSystem:
             wx = self.target_window.x + self.target_window.w / 2
             wy = self.target_window.y + self.target_window.h / 2
 
+            # Posição da ponta do esfregão / lança-solda no sprite 32x32 (offset +16, +3 a partir do arnês 8,10)
+            tip_x = hx + 16
+            tip_y = hy + 3
+
             if action_type == "CLEANING":
-                # Partículas de água e espuma néon (ciano 12, branco 7, azul 1)
+                # Partículas de água e espuma néon saindo das cerdas do esfregão
                 if random.random() < 0.65:
                     vx = random.uniform(-1.2, 1.2)
                     vy = random.uniform(-0.8, 1.5)
                     col = random.choice([12, 7, 6, 11])
-                    self.particles.append(Particle(hx + random.uniform(-6, 6), hy + random.uniform(-4, 4), vx, vy, col, life=12))
+                    self.particles.append(Particle(tip_x + random.uniform(-4, 4), tip_y + random.uniform(-4, 4), vx, vy, col, life=12))
 
                 # Efeito sonoro contínuo de limpeza a cada 5 frames
                 if pyxel.frame_count % 5 == 0:
                     self.play_sound(6, channel=1)
             else:
-                # Partículas de solda a laser (laranja 9, amarelo 10, rosa néon 8, branco 7)
+                # Partículas de solda a laser saindo da ponta da lança-solda
                 if random.random() < 0.8:
                     vx = random.uniform(-2.0, 2.0)
                     vy = random.uniform(-1.5, 0.5)
                     col = random.choice([10, 9, 8, 7])
-                    self.particles.append(Particle(hx + random.uniform(-4, 4), hy + random.uniform(-4, 4), vx, vy, col, life=16))
+                    self.particles.append(Particle(tip_x + random.uniform(-3, 3), tip_y + random.uniform(-3, 3), vx, vy, col, life=16))
 
                 # Efeito sonoro de solda a laser
                 if pyxel.frame_count % 4 == 0:
@@ -226,22 +230,17 @@ class PlayerCleaningSystem:
         for pop in self.popups:
             pop.draw()
 
-        # 3. Ferramenta de trabalho nas mãos do alpinista durante a ação
-        if self.is_cleaning and self.target_window:
+        # 3. Feixe de solda a laser partindo da ponta da lança-solda (na limpeza, o próprio sprite anima o esfregão)
+        if self.is_cleaning and self.target_window and self.current_action_type == "REPAIRING":
             hx, hy = self.player.anchor_system.get_harness_pos()
+            tip_x = hx + 16
+            tip_y = hy + 3
             wx = self.target_window.x + self.target_window.w / 2
             wy = self.target_window.y + self.target_window.h / 2
 
-            # Raio laser ou rodo conectando a mão do alpinista à superfície do vidro
-            if self.current_action_type == "REPAIRING":
-                # Feixe de laser térmico azul/ciano ou amarelo
-                laser_col = 10 if (pyxel.frame_count // 2) % 2 == 0 else 7
-                pyxel.line(int(hx), int(hy), int(wx + random.uniform(-4, 4)), int(wy + random.uniform(-4, 4)), laser_col)
-                pyxel.circb(int(wx), int(wy), 3, laser_col)
-            else:
-                # Spray/rodo de limpeza
-                pyxel.line(int(hx), int(hy), int(wx), int(wy), 12)
-                pyxel.rect(int(wx - 4), int(wy - 1), 8, 2, 7)
+            laser_col = 10 if (pyxel.frame_count // 2) % 2 == 0 else 7
+            pyxel.line(int(tip_x), int(tip_y), int(wx + random.uniform(-4, 4)), int(wy + random.uniform(-4, 4)), laser_col)
+            pyxel.circb(int(wx), int(wy), 3, laser_col)
 
     def draw_hud(self, screen_width: int, screen_height: int):
         """Desenha a dica de ação contextual [E] e o placar corporativo no HUD."""

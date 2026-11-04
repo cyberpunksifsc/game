@@ -6,6 +6,7 @@ FPS = 30
 # --- Vida (HP) ---
 MAX_HP = 3                      # 3 pontos de vida, cada tiro tira 1, sem regeneração
 INVULNERABILITY_FRAMES = 45     # Janela de invulnerabilidade após levar dano (~1.5s)
+HIT_ANIM_TICKS = 15             # Duração da animação de reação a dano (~0.5s)
 
 # --- Barra de Eficiência Corporativa (0.0 a 1.0) ---
 EFFICIENCY_FULL_DRAIN_SECONDS = 60.0                            # Cheia -> zero em ~60s com jogador ativo
@@ -47,6 +48,7 @@ class PlayerHealthAndScore:
         """Reinicia todas as métricas para uma nova partida (turno de trabalho)."""
         self.hp = MAX_HP
         self.invulnerable_timer = 0
+        self.hit_anim_timer = 0
 
         self.efficiency = 1.0
 
@@ -72,6 +74,9 @@ class PlayerHealthAndScore:
 
         if self.invulnerable_timer > 0:
             self.invulnerable_timer -= 1
+
+        if self.hit_anim_timer > 0:
+            self.hit_anim_timer -= 1
 
         drain = EFFICIENCY_BASE_DRAIN
         if is_idle:
@@ -119,6 +124,7 @@ class PlayerHealthAndScore:
 
         self.hp = max(0, self.hp - amount)
         self.invulnerable_timer = INVULNERABILITY_FRAMES
+        self.hit_anim_timer = HIT_ANIM_TICKS
 
         if self.hp <= 0:
             self.trigger_game_over(REASON_HP)
