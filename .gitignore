@@ -243,7 +243,6 @@ $RECYCLE.BIN/
 
 # Pyxel Web Build Artifacts
 *.pyxapp
-app/app.html
 dist/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,venv,visualstudiocode,windows,linux

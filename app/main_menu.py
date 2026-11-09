@@ -22,17 +22,23 @@ class MainMenu:
         self.audio.play_menu_bgm()
 
     def carregar_recursos(self):
-        bg_left = BASE_DIR / "assets" / "BackGround" / "city1" / "bg_left.png"
-        if not bg_left.exists():
-            bg_left = ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_left.png"
-        bg_right = BASE_DIR / "assets" / "BackGround" / "city1" / "bg_right.png"
-        if not bg_right.exists():
-            bg_right = ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_right.png"
         try:
-            if bg_left.exists():
-                pyxel.images[0].load(0, 0, str(bg_left))
-            if bg_right.exists():
-                pyxel.images[1].load(0, 0, str(bg_right))
+            for bg_left in (
+                Path("assets/BackGround/city1/bg_left.png"),
+                BASE_DIR / "assets" / "BackGround" / "city1" / "bg_left.png",
+                ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_left.png",
+            ):
+                if bg_left.exists():
+                    pyxel.images[0].load(0, 0, str(bg_left))
+                    break
+            for bg_right in (
+                Path("assets/BackGround/city1/bg_right.png"),
+                BASE_DIR / "assets" / "BackGround" / "city1" / "bg_right.png",
+                ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_right.png",
+            ):
+                if bg_right.exists():
+                    pyxel.images[1].load(0, 0, str(bg_right))
+                    break
         except BaseException:
             pass
         

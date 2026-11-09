@@ -39,15 +39,16 @@ cp "${ROOT_DIR}/assets/BackGround/city1/bg_right.png" "${APP_STAGE}/assets/BackG
 # 4. Faixas de áudio OGG otimizadas de runtime
 cp "${ROOT_DIR}"/assets/Audio/SoundTrack/*.ogg "${APP_STAGE}/assets/Audio/SoundTrack/"
 
-# 5. Gera .pyxapp e .html em dist/
+# 5. Gera .pyxapp em dist/ e atualiza tanto dist/app.html quanto app/app.html
 mkdir -p "${ROOT_DIR}/dist"
 (
     cd "${STAGE_DIR}"
     "${PYXEL_BIN}" package "${APP_STAGE}" "${APP_STAGE}/main.py"
     "${PYXEL_BIN}" app2html "${STAGE_DIR}/app.pyxapp"
     mv "${STAGE_DIR}/app.pyxapp" "${ROOT_DIR}/dist/app.pyxapp"
+    cp "${STAGE_DIR}/app.html" "${ROOT_DIR}/app/app.html"
     mv "${STAGE_DIR}/app.html" "${ROOT_DIR}/dist/app.html"
 )
 
-echo "Build Web concluído em dist/:"
-ls -lh "${ROOT_DIR}/dist/app.pyxapp" "${ROOT_DIR}/dist/app.html"
+echo "Build Web concluído em app/app.html e dist/:"
+ls -lh "${ROOT_DIR}/app/app.html" "${ROOT_DIR}/dist/app.pyxapp" "${ROOT_DIR}/dist/app.html"

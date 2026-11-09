@@ -75,18 +75,22 @@ class Gameplay:
         self.camera_y = (self.player.y + 16) - self.app.HEIGHT / 2
 
     def carregar_recursos(self):
-        resource_file = BASE_DIR / "resources.pyxres"
-        if resource_file.exists():
-            try:
-                pyxel.load(str(resource_file), exclude_sounds=True, exclude_musics=True)
-            except TypeError:
-                pyxel.load(str(resource_file))
+        for res_candidate in (Path("resources.pyxres"), BASE_DIR / "resources.pyxres"):
+            if res_candidate.exists():
+                try:
+                    pyxel.load(str(res_candidate), exclude_sounds=True, exclude_musics=True)
+                except TypeError:
+                    pyxel.load(str(res_candidate))
+                break
 
-        bg_image = BASE_DIR / "assets" / "BackGround" / "city1" / "1.png"
-        if not bg_image.exists():
-            bg_image = ROOT_DIR / "assets" / "BackGround" / "city1" / "1.png"
-        if bg_image.exists():
-            pyxel.images[1].load(0, 0, str(bg_image))
+        for bg_image in (
+            Path("assets/BackGround/city1/1.png"),
+            BASE_DIR / "assets" / "BackGround" / "city1" / "1.png",
+            ROOT_DIR / "assets" / "BackGround" / "city1" / "1.png",
+        ):
+            if bg_image.exists():
+                pyxel.images[1].load(0, 0, str(bg_image))
+                break
 
         # Carrega o spritesheet do personagem no banco 2
         self.player.carregar_recursos()
