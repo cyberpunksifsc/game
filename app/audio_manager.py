@@ -9,13 +9,13 @@ SOUNDTRACK_DIR = ROOT_DIR / "assets" / "Audio" / "SoundTrack"
 CHANNEL_BGM = 3
 DEFAULT_BGM_VOLUME = 0.45
 
-# Setores verticais da fachada do arranha-céu Apex-01
-SECTOR_LOW = "SECTOR_LOW"    # Setor Baixo (Submundo/Base): player_y > 1200.0
-SECTOR_MID = "SECTOR_MID"    # Setor Médio (Zona Industrial/Corporativa): 600.0 < player_y <= 1200.0
-SECTOR_HIGH = "SECTOR_HIGH"  # Setor Alto (Ápice da Torre): player_y <= 600.0
+# Setores verticais da fachada do arranha-céu Apex-01 (28 andares: y=1800 até y=660)
+SECTOR_LOW = "SECTOR_LOW"    # Setor Baixo (Submundo/Base): player_y > 1400.0
+SECTOR_MID = "SECTOR_MID"    # Setor Médio (Zona Industrial/Corporativa): 980.0 < player_y <= 1400.0
+SECTOR_HIGH = "SECTOR_HIGH"  # Setor Alto (Ápice da Torre): player_y <= 980.0
 
-SECTOR_LOW_THRESHOLD = 1200.0
-SECTOR_MID_THRESHOLD = 600.0
+SECTOR_LOW_THRESHOLD = 1400.0
+SECTOR_MID_THRESHOLD = 980.0
 
 # Slots de som Pyxel reservados para áudio PCM (50 a 54)
 SOUND_BGM_MENU = 50

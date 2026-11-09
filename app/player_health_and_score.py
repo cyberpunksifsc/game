@@ -19,11 +19,15 @@ EFFICIENCY_GAIN_REPAIR = 0.30                                   # Janela consert
 # --- Pontuação ---
 SCORE_CLEAN = 100
 SCORE_REPAIR = 250
+BONUS_PER_HP = 300
+BONUS_MAX_EFFICIENCY = 500
+SOUND_VICTORY_FANFARE = 14
 
-# --- Motivos de Game Over ---
+# --- Motivos de Encerramento (Game Over / Vitória) ---
 REASON_FALL = "FALL"
 REASON_HP = "HP"
 REASON_EFFICIENCY = "EFFICIENCY"
+REASON_VICTORY = "VICTORY"
 
 GAME_OVER_TEXTS = {
     REASON_FALL: ("MOTIVO: QUEDA FATAL", "O trabalhador falhou ao se ancorar."),
@@ -42,7 +46,15 @@ class PlayerHealthAndScore:
 
     def __init__(self, powerup_system=None):
         self.powerup_system = powerup_system
+        self._init_sounds()
         self.reset()
+
+    def _init_sounds(self):
+        try:
+            # Som 14: Fanfarra corporativa de vitória ao concluir o expediente no Apex
+            pyxel.sounds[SOUND_VICTORY_FANFARE].set("c3e3g3c4g3c4", "t", "777767", "v", 6)
+        except BaseException:
+            pass
 
     def reset(self):
         """Reinicia todas as métricas para uma nova partida (turno de trabalho)."""
@@ -55,8 +67,11 @@ class PlayerHealthAndScore:
         self.score = 0
         self.windows_cleaned = 0
         self.windows_repaired = 0
+        self.hp_bonus = 0
+        self.efficiency_bonus = 0
 
         self.is_game_over = False
+        self.is_victory = False
         self.game_over_reason = ""
         self.game_over_timer = 0
 
@@ -135,8 +150,22 @@ class PlayerHealthAndScore:
         if self.is_game_over:
             return
         self.is_game_over = True
+        self.is_victory = (reason == REASON_VICTORY)
         self.game_over_reason = reason
         self.game_over_timer = 0
+
+    def trigger_victory(self):
+        """Encerra o expediente com vitória ao alcançar o topo (Apex), somando bônus finais."""
+        if self.is_game_over:
+            return
+        self.hp_bonus = max(0, self.hp) * BONUS_PER_HP
+        self.efficiency_bonus = int(round(max(0.0, self.efficiency) * BONUS_MAX_EFFICIENCY))
+        self.score += self.hp_bonus + self.efficiency_bonus
+        self.trigger_game_over(REASON_VICTORY)
+        try:
+            pyxel.play(0, SOUND_VICTORY_FANFARE)
+        except BaseException:
+            pass
 
     @property
     def can_retry(self) -> bool:
@@ -222,12 +251,25 @@ class PlayerHealthAndScore:
         bx = (screen_width - box_w) // 2
         by = (screen_height - box_h) // 2
 
+        border_col = 11 if self.is_victory else 8
+        inner_col = 10 if self.is_victory else 8
+
         pyxel.rect(bx, by, box_w, box_h, 0)
-        pyxel.rectb(bx, by, box_w, box_h, 8)
-        pyxel.rectb(bx + 2, by + 2, box_w - 4, box_h - 4, 8)
+        pyxel.rectb(bx, by, box_w, box_h, border_col)
+        pyxel.rectb(bx + 2, by + 2, box_w - 4, box_h - 4, inner_col)
 
         def centered(text: str, y: int, col: int):
             pyxel.text(bx + (box_w - len(text) * 4) // 2, y, text, col)
+
+        if self.is_victory:
+            centered("[ EXPEDIENTE CONCLUIDO! ]", by + 8, 11)
+            centered("META CORPORATIVA ATINGIDA NO APEX", by + 18, 10)
+            centered(f"BONUS HP: +{self.hp_bonus}   EFIC: +{self.efficiency_bonus}", by + 27, 12)
+            centered(f"PONTUACAO FINAL: {self.score:05d}", by + 39, 10)
+            centered(f"LIMPOS: {self.windows_cleaned}   REPAROS: {self.windows_repaired}", by + 48, 7)
+            if self.can_retry and (pyxel.frame_count // 15) % 2 == 0:
+                centered("TOQUE NA TELA OU [R]/[ESPACO] P/ NOVO TURNO", by + 60, 11)
+            return
 
         reason_title, reason_desc = GAME_OVER_TEXTS.get(self.game_over_reason, ("", ""))
         centered("[ RESCISAO DE CONTRATO ]", by + 8, 8)

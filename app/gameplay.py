@@ -95,9 +95,9 @@ class Gameplay:
         )
 
     def update(self):
-        # Game Over: congela a simulação e aguarda o comando de retentar
+        # Game Over ou Vitória: congela a simulação e aguarda o comando de retentar
         if self.stats.is_game_over:
-            self.audio.update_gameplay_bgm(self.player.y, is_game_over=True)
+            self.audio.update_gameplay_bgm(self.player.y, is_game_over=not self.stats.is_victory)
             self.stats.update(is_idle=False)
             self.player.touch_controls.update()
             if self.stats.can_retry and self._retry_pressed():
@@ -116,6 +116,12 @@ class Gameplay:
 
         # Atualiza a movimentação e âncoras considerando a posição atual da câmera
         self.player.update(self.camera_x, self.camera_y)
+
+        # Condição de Vitória: chegou ao topo corporativo (cobertura Apex)
+        if self.player.state != STATE_FATAL_FALL and self.player.y <= self.building.apex_y + 20.0:
+            self.cleaning_system.is_cleaning = False
+            self.stats.trigger_victory()
+            return
 
         # Atualiza perigos urbanos (balas perdidas, telegrafagem laser e colisões)
         self.hazard_spawner.update(

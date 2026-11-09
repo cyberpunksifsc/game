@@ -101,11 +101,11 @@ def test_all_five_audio_files_exist_and_resolve(mocked_pyxel_audio):
     ("player_y", "expected_sector", "expected_slot"),
     [
         (1800.0, SECTOR_LOW, SOUND_BGM_LOW),
-        (1201.0, SECTOR_LOW, SOUND_BGM_LOW),
-        (1200.0, SECTOR_MID, SOUND_BGM_MID),
-        (601.0, SECTOR_MID, SOUND_BGM_MID),
-        (600.0, SECTOR_HIGH, SOUND_BGM_HIGH),
-        (100.0, SECTOR_HIGH, SOUND_BGM_HIGH),
+        (1401.0, SECTOR_LOW, SOUND_BGM_LOW),
+        (1400.0, SECTOR_MID, SOUND_BGM_MID),
+        (981.0, SECTOR_MID, SOUND_BGM_MID),
+        (980.0, SECTOR_HIGH, SOUND_BGM_HIGH),
+        (680.0, SECTOR_HIGH, SOUND_BGM_HIGH),
     ],
 )
 def test_get_sector_for_y_boundaries(mocked_pyxel_audio, player_y, expected_sector, expected_slot):
@@ -132,28 +132,28 @@ def test_track_transitions_and_no_redundant_restarts(mocked_pyxel_audio):
     assert play_calls[-1] == (CHANNEL_BGM, SOUND_BGM_LOW, True)
     assert len(play_calls) == 2
 
-    # Permanecer no mesmo setor (ex: subindo de 1800 para 1201) não reinicia a música
-    audio.update_gameplay_bgm(1500.0, is_game_over=False)
-    audio.update_gameplay_bgm(1201.0, is_game_over=False)
+    # Permanecer no mesmo setor (ex: subindo de 1800 para 1401) não reinicia a música
+    audio.update_gameplay_bgm(1600.0, is_game_over=False)
+    audio.update_gameplay_bgm(1401.0, is_game_over=False)
     assert len(play_calls) == 2
 
-    # 3. Transição para o Setor Médio (y=1200 -> SECTOR_MID)
-    audio.update_gameplay_bgm(1200.0, is_game_over=False)
+    # 3. Transição para o Setor Médio (y=1400 -> SECTOR_MID)
+    audio.update_gameplay_bgm(1400.0, is_game_over=False)
     assert play_calls[-1] == (CHANNEL_BGM, SOUND_BGM_MID, True)
     assert len(play_calls) == 3
 
-    # Permanecer no Setor Médio (y=900, y=601) não reinicia
-    audio.update_gameplay_bgm(900.0, is_game_over=False)
-    audio.update_gameplay_bgm(601.0, is_game_over=False)
+    # Permanecer no Setor Médio (y=1200, y=981) não reinicia
+    audio.update_gameplay_bgm(1200.0, is_game_over=False)
+    audio.update_gameplay_bgm(981.0, is_game_over=False)
     assert len(play_calls) == 3
 
-    # 4. Transição para o Setor Alto (y=600 -> SECTOR_HIGH)
-    audio.update_gameplay_bgm(600.0, is_game_over=False)
+    # 4. Transição para o Setor Alto (y=980 -> SECTOR_HIGH)
+    audio.update_gameplay_bgm(980.0, is_game_over=False)
     assert play_calls[-1] == (CHANNEL_BGM, SOUND_BGM_HIGH, True)
     assert len(play_calls) == 4
 
-    # Permanecer no Setor Alto (y=100) não reinicia
-    audio.update_gameplay_bgm(100.0, is_game_over=False)
+    # Permanecer no Setor Alto (y=680) não reinicia
+    audio.update_gameplay_bgm(680.0, is_game_over=False)
     assert len(play_calls) == 4
 
     # 5. Game Over dispara o sting curto sem loop apenas uma única vez

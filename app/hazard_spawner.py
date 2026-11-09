@@ -14,23 +14,23 @@ SOUND_GLASS_SHATTER = 13
 # Chance (por bala) de estilhaçar a primeira janela limpa que atravessar
 BULLET_WINDOW_BREAK_CHANCE = 0.06
 
-# Constantes de balanceamento da curva de dificuldade dinâmica (Semanas 10-12)
+# Constantes de balanceamento da curva de dificuldade dinâmica (teto final suavizado)
 BASE_MIN_INTERVAL = 110
 BASE_MAX_INTERVAL = 170
-MIN_ALLOWED_INTERVAL = 42
-MAX_ALLOWED_INTERVAL = 70
+MIN_ALLOWED_INTERVAL = 75   # Cooldown mínimo de 2.5s a 30 FPS no topo
+MAX_ALLOWED_INTERVAL = 90   # Cooldown máximo de 3.0s a 30 FPS no topo
 
 BASE_SPEED_MIN = 4.8
 BASE_SPEED_MAX = 6.0
-MAX_SPEED_MIN = 6.6
-MAX_SPEED_MAX = 8.4
+MAX_SPEED_MIN = 5.4
+MAX_SPEED_MAX = 6.2         # Velocidade máxima travada em 6.2 no topo
 
 BASE_TELEGRAPH_FRAMES = 20
-MIN_TELEGRAPH_FRAMES = 12
+MIN_TELEGRAPH_FRAMES = 15
 
 MAX_TIME_FRAMES = 3600  # 2 minutos a 30 FPS para atingir fator máximo de tempo
 START_ALTITUDE_Y = 1800.0
-APEX_ALTITUDE_Y = 150.0
+APEX_ALTITUDE_Y = 660.0
 
 
 class HazardSpawner:

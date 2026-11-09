@@ -7,8 +7,8 @@ DRONE_STATE_SCANNING = "SCANNING"
 DRONE_STATE_FIRING = "FIRING"
 DRONE_STATE_COOLDOWN = "COOLDOWN"
 
-# Distância de subida até cada drone reduzida em 20% (jogador nasce em y=1800)
-DEFAULT_DRONE_ALTITUDES = [1520.0, 1240.0, 960.0, 680.0]
+# Distância distribuída ao longo dos 28 andares (y=1800 até apex_y=660)
+DEFAULT_DRONE_ALTITUDES = [1540.0, 1280.0, 1020.0, 760.0]
 
 
 class PatrolDrone:

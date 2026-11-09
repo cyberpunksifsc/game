@@ -182,9 +182,9 @@ class BuildingGenerator:
         self.building_width = self.building_right - self.building_left
         self.building_center_x = (self.building_left + self.building_right) // 2
 
-        # Alturas do mundo
+        # Alturas do mundo (28 andares: de base_y=1880 até apex_y=660)
         self.base_y = 1880.0     # Nível térreo da calçada/fundação
-        self.apex_y = 40.0       # Topo do arranha-céu (Apex)
+        self.apex_y = 660.0      # Topo do arranha-céu (Apex — 28 andares)
         self.floor_height = 42   # Distância vertical entre pavimentos
 
         # Colunas de janelas (4 colunas na fachada)
@@ -359,9 +359,12 @@ class BuildingGenerator:
         if camera_y > ay + 150:
             return
 
-        # Viga mestre do topo
+        # Viga mestre do topo com faixa de chegada verde/dourada (Meta Apex)
         pyxel.rect(self.building_left - 24, ay - 20, self.building_width + 48, 24, 5)
         pyxel.rectb(self.building_left - 24, ay - 20, self.building_width + 48, 24, 0)
+        finish_col = 11 if (pyxel.frame_count // 10) % 2 == 0 else 10
+        pyxel.line(self.building_left - 22, ay + 2, self.building_right + 22, ay + 2, finish_col)
+        pyxel.line(self.building_left - 22, ay - 18, self.building_right + 22, ay - 18, 12)
 
         # Antena de transmissão corporativa
         ax = self.building_center_x
