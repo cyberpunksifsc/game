@@ -13,6 +13,9 @@ from patrol_drone_ai import DEFAULT_DRONE_ALTITUDES
 from player_health_and_score import (
     BONUS_MAX_EFFICIENCY,
     BONUS_PER_HP,
+    EFFICIENCY_BASE_DRAIN,
+    EFFICIENCY_FULL_DRAIN_SECONDS,
+    FPS,
     REASON_HP,
     REASON_VICTORY,
     PlayerHealthAndScore,
@@ -41,6 +44,11 @@ def test_bullet_final_caps_match_balance_spec():
     # Teto final travado em 6.2 de velocidade máxima e 2.5s (75 frames) de cooldown mínimo
     assert MAX_SPEED_MAX == pytest.approx(6.2)
     assert MIN_ALLOWED_INTERVAL == 75
+
+    # Dreno da barra de Eficiência Corporativa 20% menor que o antigo (1 / (60 * 30))
+    old_drain = 1.0 / (60.0 * FPS)
+    assert EFFICIENCY_FULL_DRAIN_SECONDS == pytest.approx(75.0)
+    assert EFFICIENCY_BASE_DRAIN == pytest.approx(old_drain * 0.80)
 
 
 def test_trigger_victory_calculates_bonuses_and_resets_cleanly():

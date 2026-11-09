@@ -9,7 +9,7 @@ INVULNERABILITY_FRAMES = 45     # Janela de invulnerabilidade após levar dano (
 HIT_ANIM_TICKS = 15             # Duração da animação de reação a dano (~0.5s)
 
 # --- Barra de Eficiência Corporativa (0.0 a 1.0) ---
-EFFICIENCY_FULL_DRAIN_SECONDS = 60.0                            # Cheia -> zero em ~60s com jogador ativo
+EFFICIENCY_FULL_DRAIN_SECONDS = 75.0                            # 20% mais lenta (cheia -> zero em ~75s ativo)
 EFFICIENCY_BASE_DRAIN = 1.0 / (EFFICIENCY_FULL_DRAIN_SECONDS * FPS)
 EFFICIENCY_IDLE_MULTIPLIER = 2.0                                # Cai 2x mais rápido parado/sem trabalhar
 EFFICIENCY_LOW_THRESHOLD = 0.25                                 # Abaixo disso, a barra pisca em alerta

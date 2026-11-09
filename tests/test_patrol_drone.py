@@ -168,3 +168,22 @@ def test_first_drone_is_closer_to_spawn():
     spawn_y = 1800.0
     assert spawn_y - DEFAULT_DRONE_ALTITUDES[0] <= 280.0
     assert DEFAULT_DRONE_ALTITUDES == sorted(DEFAULT_DRONE_ALTITUDES, reverse=True)
+
+
+def test_drone_cannot_scan_or_shoot_above_its_y_axis():
+    drone = PatrolDrone(x=150.0, y=1100.0, detect_range_y=55.0, detect_range_x=160.0)
+
+    # Jogador acima do eixo Y do drone (center_y = 1090.0 < 1100.0): não detecta
+    above_player_y = 1100.0 - 16.0 - 10.0
+    assert drone.update(140.0, above_player_y) is None
+    assert drone.state == DRONE_STATE_PATROL
+
+    # Jogador abaixo do eixo Y (center_y = 1120.0 >= 1100.0): inicia SCANNING
+    below_player_y = 1100.0 - 16.0 + 20.0
+    assert drone.update(140.0, below_player_y) is None
+    assert drone.state == DRONE_STATE_SCANNING
+
+    # Jogador sobe acima do eixo Y durante o SCANNING: cancela na hora
+    assert drone.update(140.0, above_player_y) is None
+    assert drone.state == DRONE_STATE_PATROL
+    assert drone.scan_timer == 0
