@@ -61,11 +61,13 @@ class PlayerCleaningSystem:
     efeitos visuais, pontuação e feedback corporativo.
     """
 
-    def __init__(self, player, building, stats=None):
+    def __init__(self, player, building, stats=None, consumable_manager=None):
         self.player = player
         self.building = building
         # Sistema de HP/Eficiência/Pontuação (player_health_and_score.PlayerHealthAndScore)
         self.stats = stats
+        # Gerenciador opcional de consumíveis que saltam das janelas concluídas
+        self.consumable_manager = consumable_manager
 
         # Configuração de sons chiptune para limpeza e solda
         self.init_sounds()
@@ -206,6 +208,8 @@ class PlayerCleaningSystem:
                     self.play_sound(9, channel=1)
                     self.popups.append(FloatingScore(wx, wy - 8, f"+{points}", 10))
 
+                if self.consumable_manager is not None:
+                    self.consumable_manager.try_spawn_from_window(wx, wy)
 
                 # Flash com faíscas de celebração
                 for _ in range(16):

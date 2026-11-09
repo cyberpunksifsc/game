@@ -145,6 +145,13 @@ class PlayerHealthAndScore:
             self.trigger_game_over(REASON_HP)
         return True
 
+    def heal(self, amount: int = 1) -> bool:
+        """Cura o jogador até MAX_HP. Retorna True se curou pelo menos 1 coração."""
+        if self.is_game_over or self.hp >= MAX_HP or amount <= 0:
+            return False
+        self.hp = min(MAX_HP, self.hp + amount)
+        return True
+
     def trigger_game_over(self, reason: str):
         """Encerra o turno com o motivo informado (só registra a primeira causa)."""
         if self.is_game_over:

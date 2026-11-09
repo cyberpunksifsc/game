@@ -8,6 +8,7 @@ from player_anchor_system import STATE_FATAL_FALL
 from player_health_and_score import PlayerHealthAndScore, REASON_FALL
 from hazard_spawner import HazardSpawner
 from powerup_system import PowerUpSystem
+from consumable_system import ConsumableManager
 
 STATE_PLAYING = "PLAYING"
 BASE_DIR = Path(__file__).resolve().parent
@@ -40,8 +41,16 @@ class Gameplay:
         # Sistema de perigos: balas perdidas e telegrafagem laser
         self.hazard_spawner = HazardSpawner()
 
+        # Sistema de consumíveis coletáveis (vida / power-ups que saltam das janelas)
+        self.consumable_manager = ConsumableManager()
+
         # Sistema de limpeza e conserto de janelas (acionado com [E])
-        self.cleaning_system = PlayerCleaningSystem(self.player, self.building, self.stats)
+        self.cleaning_system = PlayerCleaningSystem(
+            self.player,
+            self.building,
+            self.stats,
+            consumable_manager=self.consumable_manager,
+        )
 
     def enter(self):
         """Chamado toda vez que o app entra no estado GAMEPLAY."""
@@ -53,6 +62,7 @@ class Gameplay:
         self.player.anchor_system.reset()
         self.building.generate()
         self.cleaning_system.reset()
+        self.consumable_manager.reset()
         self.stats.reset()
         self.hazard_spawner.reset()
         self.recenter_camera()
@@ -116,6 +126,15 @@ class Gameplay:
 
         # Atualiza a movimentação e âncoras considerando a posição atual da câmera
         self.player.update(self.camera_x, self.camera_y)
+
+        # Atualiza consumíveis coletáveis (salto das janelas, queda lenta e coleta)
+        self.consumable_manager.update(
+            self.player,
+            self.stats,
+            self.cleaning_system,
+            self.camera_y,
+            self.app.HEIGHT,
+        )
 
         # Condição de Vitória: chegou ao topo corporativo (cobertura Apex)
         if self.player.state != STATE_FATAL_FALL and self.player.y <= self.building.apex_y + 20.0:
@@ -188,6 +207,9 @@ class Gameplay:
 
         # 3. Partículas e feixes de limpeza/solda
         self.cleaning_system.draw_world(self.camera_x, self.camera_y)
+
+        # 3b. Consumíveis coletáveis saltando das janelas
+        self.consumable_manager.draw()
 
         # 4. Perigos urbanos: feixes de mira laser e balas traçantes neon
         self.hazard_spawner.draw(self.camera_x, self.camera_y)
