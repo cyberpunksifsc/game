@@ -92,7 +92,12 @@ class Window:
         frame_col = 8 if (self.shatter_timer // 2) % 2 == 0 else 9
         pyxel.rectb(wx - 1, wy - 1, self.w + 2, self.h + 2, frame_col)
 
-        self.shatter_timer -= 1
+    def update(self, is_target: bool = False):
+        """Atualiza temporizadores visuais da janela no loop de simulação (30 FPS)."""
+        if self.shatter_timer > 0:
+            self.shatter_timer -= 1
+        if is_target and self.state != WINDOW_STATE_CLEAN:
+            self.pulse_timer = (self.pulse_timer + 1) % 60
 
     def draw(self, camera_x: float, camera_y: float, is_target: bool = False):
         """Desenha a janela e seu estado visual com tiles e texturas."""
@@ -141,7 +146,6 @@ class Window:
 
         # Se for o alvo em foco do alpinista, exibe retículo néon pulsante
         if is_target and self.state != WINDOW_STATE_CLEAN:
-            self.pulse_timer = (self.pulse_timer + 1) % 60
             glow_col = 11 if (self.pulse_timer // 6) % 2 == 0 else 12
             if self.state == WINDOW_STATE_BROKEN:
                 glow_col = 9 if (self.pulse_timer // 6) % 2 == 0 else 8
@@ -192,8 +196,10 @@ class BuildingGenerator:
         self.window_h = 24
         self.column_xs = [60, 114, 174, 228]
 
-        # Lista de todas as janelas geradas
+        # Lista de todas as janelas geradas e índice espacial por pavimento
         self.windows: list[Window] = []
+        self.windows_by_floor: dict[int, list[Window]] = {}
+        self._indexed_windows_id: int = 0
 
         # Gerar toda a estrutura do edifício
         self.generate()
@@ -201,6 +207,7 @@ class BuildingGenerator:
     def generate(self):
         """Gera todos os pavimentos de janelas da base até o topo."""
         self.windows.clear()
+        self.windows_by_floor.clear()
 
         # Determina o número de andares
         total_floors = int((self.base_y - 40 - self.apex_y) // self.floor_height)
@@ -211,6 +218,8 @@ class BuildingGenerator:
         for floor in range(total_floors):
             # Altura Y do chão deste andar (da base para cima)
             floor_y = self.base_y - 45 - (floor * self.floor_height)
+            floor_list: list[Window] = []
+            self.windows_by_floor[floor] = floor_list
 
             for col_idx, col_x in enumerate(self.column_xs):
                 win_y = floor_y - self.window_h
@@ -248,13 +257,34 @@ class BuildingGenerator:
                     initial_state=state,
                 )
                 self.windows.append(win)
+                floor_list.append(win)
+
+        self._indexed_windows_id = id(self.windows)
+
+    def _candidate_windows_near_y(self, y: float, floor_radius: int = 1):
+        """Retorna apenas as janelas dos pavimentos vizinhos à coordenada Y informada."""
+        if id(self.windows) != self._indexed_windows_id:
+            return self.windows
+        approx_floor = int(round((self.base_y - 45 - self.window_h / 2 - y) / self.floor_height))
+        candidates: list[Window] = []
+        for f in range(approx_floor - floor_radius, approx_floor + floor_radius + 1):
+            floor_wins = self.windows_by_floor.get(f)
+            if floor_wins:
+                candidates.extend(floor_wins)
+        return candidates
+
+    def update(self, target_window: Window | None = None):
+        """Atualiza temporizadores de animação das janelas."""
+        for win in self.windows:
+            if win.shatter_timer > 0 or win is target_window:
+                win.update(is_target=(win is target_window))
 
     def find_target_window(self, harness_x: float, harness_y: float) -> Window | None:
         """Encontra a janela mais próxima sob o alcance de trabalho do alpinista."""
         best_win = None
         best_dist = 9999.0
 
-        for win in self.windows:
+        for win in self._candidate_windows_near_y(harness_y, floor_radius=1):
             # Janelas limpas não precisam de trabalho
             if win.state == WINDOW_STATE_CLEAN:
                 continue
@@ -278,7 +308,7 @@ class BuildingGenerator:
 
     def find_window_at(self, px: float, py: float) -> Window | None:
         """Retorna a janela que contém o ponto (px, py), ou None."""
-        for win in self.windows:
+        for win in self._candidate_windows_near_y(py, floor_radius=1):
             # Filtro rápido por altura antes do teste completo
             if win.y <= py <= win.y + win.h and win.contains_point(px, py):
                 return win
@@ -305,8 +335,8 @@ class BuildingGenerator:
                 pyxel.rect(vx, visible_top, 12, visible_bottom - visible_top, 5)
                 pyxel.line(vx, visible_top, vx, visible_bottom, 0)
                 pyxel.line(vx + 11, visible_top, vx + 11, visible_bottom, 0)
-                # Rebites espaçados
-                for ry in range(visible_top + (visible_top % 16), visible_bottom, 16):
+                # Rebites espaçados fixos na grade de coordenadas de mundo (sem jitter com a câmera)
+                for ry in range(visible_top + (-visible_top) % 16, visible_bottom, 16):
                     pyxel.pset(vx + 5, ry, 6)
 
         # 3. Vigas horizontais entre os pavimentos (onde âncoras se fixam perfeitamente)

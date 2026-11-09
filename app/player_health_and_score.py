@@ -182,20 +182,14 @@ class PlayerHealthAndScore:
     # Desenho (HUD em coordenadas de tela)
     # ------------------------------------------------------------------
     def _draw_heart(self, x: int, y: int, filled: bool):
-        """Desenha um coração 7x6 em pixel art."""
+        """Desenha um coração 7x6 em pixel art usando linhas horizontais rápidas."""
         col = 8 if filled else 5
-        pattern = (
-            ".XX.XX.",
-            "XXXXXXX",
-            "XXXXXXX",
-            ".XXXXX.",
-            "..XXX..",
-            "...X...",
-        )
-        for row, line in enumerate(pattern):
-            for c, ch in enumerate(line):
-                if ch == "X":
-                    pyxel.pset(x + c, y + row, col)
+        pyxel.rect(x + 1, y, 2, 1, col)
+        pyxel.rect(x + 4, y, 2, 1, col)
+        pyxel.rect(x, y + 1, 7, 2, col)
+        pyxel.rect(x + 1, y + 3, 5, 1, col)
+        pyxel.rect(x + 2, y + 4, 3, 1, col)
+        pyxel.pset(x + 3, y + 5, col)
         if filled:
             pyxel.pset(x + 1, y + 1, 14)  # brilho
 

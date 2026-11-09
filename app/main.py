@@ -21,7 +21,7 @@ class App:
     pyxel.init(self.WIDTH, self.HEIGHT, "Game")
     pyxel.mouse(self.MOUSE_CONFIG)
 
-    self.audio = AudioManager()
+    self.audio = AudioManager(auto_load=False, lazy_load=True)
     self.main_menu = MainMenu(self)
     self.gameplay = Gameplay(self)
 

@@ -14,6 +14,8 @@ from player_anchor_system import STATE_ANCHORED
 class Particle:
     """Partícula visual para água/espuma de limpeza ou faíscas de laser."""
 
+    __slots__ = ("x", "y", "vx", "vy", "color", "life", "max_life")
+
     def __init__(self, x: float, y: float, vx: float, vy: float, color: int, life: int = 15):
         self.x = x
         self.y = y
@@ -36,6 +38,8 @@ class Particle:
 
 class FloatingScore:
     """Texto flutuante indicador de pontuação e feedback corporativo."""
+
+    __slots__ = ("x", "y", "text", "color", "life")
 
     def __init__(self, x: float, y: float, text: str, color: int):
         self.x = x

@@ -82,7 +82,9 @@ class Gameplay:
             except TypeError:
                 pyxel.load(str(resource_file))
 
-        bg_image = ROOT_DIR / "assets" / "BackGround" / "city1" / "1.png"
+        bg_image = BASE_DIR / "assets" / "BackGround" / "city1" / "1.png"
+        if not bg_image.exists():
+            bg_image = ROOT_DIR / "assets" / "BackGround" / "city1" / "1.png"
         if bg_image.exists():
             pyxel.images[1].load(0, 0, str(bg_image))
 
@@ -114,8 +116,9 @@ class Gameplay:
                 self.start_new_run()
             return
 
-        # Atualiza o sistema de limpeza e reparo de janelas
+        # Atualiza o sistema de limpeza e reparo de janelas e animações da fachada
         self.cleaning_system.update()
+        self.building.update(target_window=self.cleaning_system.target_window)
 
         # Estabiliza o alpinista se estiver ativamente limpando/reparando
         self.player.anchor_system.is_working = self.cleaning_system.is_cleaning
@@ -196,8 +199,6 @@ class Gameplay:
                     pyxel.blt(x, y, 1, 0, 0, 256, 180)
 
     def draw(self):
-        pyxel.cls(0)
-
         # 1. Fundo da cidade com paralaxe
         self.draw_background()
 

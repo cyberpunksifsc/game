@@ -166,7 +166,11 @@ class Player:
         world_mouse_y = camera_y + pyxel.mouse_y
         hx, hy = self.anchor_system.get_harness_pos()
         dist = math.hypot(world_mouse_x - hx, world_mouse_y - hy)
-        can_plant = (len(self.anchor_system.anchors) < MAX_ANCHORS) and (dist <= MAX_PLANT_RANGE)
+        can_plant = (
+            (len(self.anchor_system.anchors) < MAX_ANCHORS)
+            and (dist <= MAX_PLANT_RANGE)
+            and self.anchor_system.is_valid_facade_point(world_mouse_x, world_mouse_y)
+        )
 
         # Cor da mira: 11 (verde néon) se puder plantar, 8 (vermelho) se bloqueado/fora de alcance
         color = 11 if can_plant else 8

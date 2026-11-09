@@ -14,6 +14,26 @@ class StrayBullet:
     em alta velocidade na diagonal ou horizontal.
     """
 
+    __slots__ = (
+        "start_x",
+        "start_y",
+        "x",
+        "y",
+        "speed",
+        "vx",
+        "vy",
+        "angle",
+        "cos_a",
+        "sin_a",
+        "phase",
+        "telegraph_timer",
+        "total_telegraph",
+        "trail_length",
+        "max_distance",
+        "distance_traveled",
+        "glass_rolled",
+    )
+
     def __init__(
         self,
         start_x: float,
@@ -36,8 +56,10 @@ class StrayBullet:
         if dist < 0.001:
             dx, dy = 1.0, 0.0
             dist = 1.0
-        self.vx = (dx / dist) * self.speed
-        self.vy = (dy / dist) * self.speed
+        self.cos_a = dx / dist
+        self.sin_a = dy / dist
+        self.vx = self.cos_a * self.speed
+        self.vy = self.sin_a * self.speed
         self.angle = math.atan2(dy, dx)
 
         # Fases do projétil
@@ -69,8 +91,7 @@ class StrayBullet:
         if self.phase == PHASE_FLYING:
             self.x += self.vx
             self.y += self.vy
-            step = math.hypot(self.vx, self.vy)
-            self.distance_traveled += step
+            self.distance_traveled += self.speed
 
             if self.distance_traveled >= self.max_distance:
                 self.phase = PHASE_DEAD
@@ -87,8 +108,8 @@ class StrayBullet:
         # Ponta da bala e centro do traço
         head_x = self.x
         head_y = self.y
-        tail_x = self.x - math.cos(self.angle) * self.trail_length
-        tail_y = self.y - math.sin(self.angle) * self.trail_length
+        tail_x = self.x - self.cos_a * self.trail_length
+        tail_y = self.y - self.sin_a * self.trail_length
 
         # AABB simples do jogador
         rx1, ry1 = px, py
@@ -111,8 +132,8 @@ class StrayBullet:
 
             # Desenha linha pontilhada laser ao longo da trajetória
             ray_len = 380.0
-            end_x = self.start_x + math.cos(self.angle) * ray_len
-            end_y = self.start_y + math.sin(self.angle) * ray_len
+            end_x = self.start_x + self.cos_a * ray_len
+            end_y = self.start_y + self.sin_a * ray_len
 
             steps = 45
             for i in range(steps):
@@ -133,8 +154,8 @@ class StrayBullet:
             # Projétil traçante neon: cauda laranja/amarela (9, 10) e núcleo branco/vermelho (7, 8)
             hx = int(self.x)
             hy = int(self.y)
-            tx = int(self.x - math.cos(self.angle) * self.trail_length)
-            ty = int(self.y - math.sin(self.angle) * self.trail_length)
+            tx = int(self.x - self.cos_a * self.trail_length)
+            ty = int(self.y - self.sin_a * self.trail_length)
 
             # Cauda luminosa
             pyxel.line(tx, ty, hx, hy, 9)

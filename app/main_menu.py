@@ -4,7 +4,8 @@ from constants import STATE_MAIN_MENU, STATE_GAMEPLAY
 from audio_manager import AudioManager
 from powerup_system import PowerUpSystem
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent
 
 class MainMenu:
     def __init__(self, app):
@@ -21,8 +22,12 @@ class MainMenu:
         self.audio.play_menu_bgm()
 
     def carregar_recursos(self):
-        bg_left = ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_left.png"
-        bg_right = ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_right.png"
+        bg_left = BASE_DIR / "assets" / "BackGround" / "city1" / "bg_left.png"
+        if not bg_left.exists():
+            bg_left = ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_left.png"
+        bg_right = BASE_DIR / "assets" / "BackGround" / "city1" / "bg_right.png"
+        if not bg_right.exists():
+            bg_right = ROOT_DIR / "assets" / "BackGround" / "city1" / "bg_right.png"
         try:
             if bg_left.exists():
                 pyxel.images[0].load(0, 0, str(bg_left))

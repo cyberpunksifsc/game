@@ -126,18 +126,12 @@ class HeartPickup(ConsumablePickup):
         ox = cx - 3
         oy = cy - 3
         pyxel.rect(ox - 1, oy - 1, 9, 8, 0)
-        pattern = (
-            ".XX.XX.",
-            "XXXXXXX",
-            "XXXXXXX",
-            ".XXXXX.",
-            "..XXX..",
-            "...X...",
-        )
-        for row, line in enumerate(pattern):
-            for col, ch in enumerate(line):
-                if ch == "X":
-                    pyxel.pset(ox + col, oy + row, 8)
+        pyxel.rect(ox + 1, oy, 2, 1, 8)
+        pyxel.rect(ox + 4, oy, 2, 1, 8)
+        pyxel.rect(ox, oy + 1, 7, 2, 8)
+        pyxel.rect(ox + 1, oy + 3, 5, 1, 8)
+        pyxel.rect(ox + 2, oy + 4, 3, 1, 8)
+        pyxel.pset(ox + 3, oy + 5, 8)
         # Brilho especular branco/rosa
         pyxel.pset(ox + 1, oy + 1, 7)
         pyxel.pset(ox + 2, oy + 1, 14)
