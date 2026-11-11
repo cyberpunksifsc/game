@@ -138,6 +138,12 @@ O arquivo `app.html` gerado pode ser aberto diretamente no navegador ou hospedad
 
 ---
 
+# Pagina Web do Game
+
+[Apex](https://n1ckxzin.itch.io/apex)
+
+---
+
 ## Créditos e Licenças
 
 - **Desenvolvimento, Game Design e Áudio Chiptune**: Nícolas Pitz
