@@ -7,8 +7,8 @@ DRONE_STATE_SCANNING = "SCANNING"
 DRONE_STATE_FIRING = "FIRING"
 DRONE_STATE_COOLDOWN = "COOLDOWN"
 
-# Distância de subida até cada drone reduzida em 20% (jogador nasce em y=1800)
-DEFAULT_DRONE_ALTITUDES = [1520.0, 1240.0, 960.0, 680.0]
+# Distância distribuída ao longo dos 28 andares (y=1800 até apex_y=660)
+DEFAULT_DRONE_ALTITUDES = [1540.0, 1280.0, 1020.0, 760.0]
 
 
 class PatrolDrone:
@@ -71,8 +71,9 @@ class PatrolDrone:
 
         if self.state == DRONE_STATE_PATROL:
             self._move_horizontal(self.speed)
+            dy = player_center_y - self.y
             if (
-                abs(player_center_y - self.y) <= self.detect_range_y
+                0.0 <= dy <= self.detect_range_y
                 and abs(player_center_x - self.x) <= self.detect_range_x
             ):
                 self.state = DRONE_STATE_SCANNING
@@ -86,8 +87,9 @@ class PatrolDrone:
             self.target_x = player_center_x
             self.target_y = player_center_y
 
-            # Cancela o escaneamento se o alpinista escapar verticalmente
-            if abs(player_center_y - self.y) > self.detect_range_y * 1.6:
+            # Cancela o escaneamento se o alpinista subir acima do eixo do drone ou escapar por baixo
+            dy = player_center_y - self.y
+            if dy < 0.0 or dy > self.detect_range_y * 1.6:
                 self.state = DRONE_STATE_PATROL
                 self.scan_timer = 0
                 return None
@@ -98,6 +100,10 @@ class PatrolDrone:
             return None
 
         elif self.state == DRONE_STATE_FIRING:
+            # Impede disparo caso o jogador tenha acabado de cruzar acima do eixo Y do drone
+            if self.target_y < self.y:
+                self.state = DRONE_STATE_PATROL
+                return None
             bullet = StrayBullet(
                 start_x=self.x,
                 start_y=self.y,

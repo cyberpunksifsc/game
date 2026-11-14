@@ -3,19 +3,24 @@ import pyxel
 
 BASE_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BASE_DIR.parent
-SOUNDTRACK_DIR = ROOT_DIR / "assets" / "Audio" / "SoundTrack"
+_LOCAL_SOUNDTRACK_DIR = BASE_DIR / "assets" / "Audio" / "SoundTrack"
+SOUNDTRACK_DIR = (
+    _LOCAL_SOUNDTRACK_DIR
+    if _LOCAL_SOUNDTRACK_DIR.exists()
+    else ROOT_DIR / "assets" / "Audio" / "SoundTrack"
+)
 
 # Canal dedicado exclusivamente à trilha sonora (canais 0, 1 e 2 ficam livres para SFX)
 CHANNEL_BGM = 3
 DEFAULT_BGM_VOLUME = 0.45
 
-# Setores verticais da fachada do arranha-céu Apex-01
-SECTOR_LOW = "SECTOR_LOW"    # Setor Baixo (Submundo/Base): player_y > 1200.0
-SECTOR_MID = "SECTOR_MID"    # Setor Médio (Zona Industrial/Corporativa): 600.0 < player_y <= 1200.0
-SECTOR_HIGH = "SECTOR_HIGH"  # Setor Alto (Ápice da Torre): player_y <= 600.0
+# Setores verticais da fachada do arranha-céu Apex-01 (28 andares: y=1800 até y=660)
+SECTOR_LOW = "SECTOR_LOW"    # Setor Baixo (Submundo/Base): player_y > 1400.0
+SECTOR_MID = "SECTOR_MID"    # Setor Médio (Zona Industrial/Corporativa): 980.0 < player_y <= 1400.0
+SECTOR_HIGH = "SECTOR_HIGH"  # Setor Alto (Ápice da Torre): player_y <= 980.0
 
-SECTOR_LOW_THRESHOLD = 1200.0
-SECTOR_MID_THRESHOLD = 600.0
+SECTOR_LOW_THRESHOLD = 1400.0
+SECTOR_MID_THRESHOLD = 980.0
 
 # Slots de som Pyxel reservados para áudio PCM (50 a 54)
 SOUND_BGM_MENU = 50
@@ -29,7 +34,7 @@ TRACK_FILES: dict[int, str] = {
     SOUND_BGM_LOW: "DavidKBD - Electric Pulse - 03 - Cyber Lights-full.ogg",
     SOUND_BGM_MID: "DavidKBD - Electric Pulse - 04 - Retrochrome Nights-full.ogg",
     SOUND_BGM_HIGH: "DavidKBD - Electric Pulse - 05 - Neon Arcadia Awakening-full.ogg",
-    SOUND_GAME_OVER_STING: "DavidKBD - Electric Pulse - 10 - Synthetic Power Surge-short.wav",
+    SOUND_GAME_OVER_STING: "DavidKBD - Electric Pulse - 10 - Synthetic Power Surge-short.ogg",
 }
 
 SECTOR_TO_TRACK_SLOT: dict[str, int] = {
@@ -50,6 +55,7 @@ class AudioManager:
         volume: float = DEFAULT_BGM_VOLUME,
         soundtrack_dir: Path | None = None,
         auto_load: bool = True,
+        lazy_load: bool = False,
     ):
         self.soundtrack_dir: Path = Path(soundtrack_dir) if soundtrack_dir is not None else SOUNDTRACK_DIR
         self.track_paths: dict[int, Path] = {
@@ -59,6 +65,7 @@ class AudioManager:
 
         self.muted: bool = False
         self.volume: float = max(0.0, min(1.0, float(volume)))
+        self.lazy_load: bool = bool(lazy_load)
 
         self.current_sector: str | None = None
         self.current_track_slot: int | None = None
@@ -72,6 +79,22 @@ class AudioManager:
     def get_track_path(self, slot: int) -> Path:
         """Retorna o caminho completo do arquivo de áudio associado ao slot."""
         return self.track_paths[slot]
+
+    def ensure_track_loaded(self, slot: int) -> bool:
+        """Carrega sob demanda apenas a faixa solicitada caso ainda não esteja em memória."""
+        if self.tracks_loaded.get(slot) is True:
+            return True
+        filepath = self.track_paths.get(slot)
+        if filepath is None or not filepath.exists():
+            self.tracks_loaded[slot] = False
+            return False
+        try:
+            pyxel.sounds[slot].pcm(str(filepath))
+            self.tracks_loaded[slot] = True
+            return True
+        except BaseException:
+            self.tracks_loaded[slot] = False
+            return False
 
     def load_tracks(self) -> dict[int, bool]:
         """Carrega os arquivos OGG/WAV nos slots PCM do Pyxel (50 a 54) e ajusta
@@ -114,6 +137,8 @@ class AudioManager:
         """Executa o slot informado no Canal 3 caso não esteja em mute."""
         if self.muted:
             return
+        if self.lazy_load and not self.tracks_loaded.get(slot):
+            self.ensure_track_loaded(slot)
         try:
             pyxel.channels[CHANNEL_BGM].gain = self.volume
         except BaseException:
@@ -189,6 +214,8 @@ class AudioManager:
             except BaseException:
                 pass
             if self.current_track_slot is not None:
+                if self.lazy_load and not self.tracks_loaded.get(self.current_track_slot):
+                    self.ensure_track_loaded(self.current_track_slot)
                 try:
                     pyxel.play(CHANNEL_BGM, self.current_track_slot, loop=self.current_loop)
                 except BaseException:

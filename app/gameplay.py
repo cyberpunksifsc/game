@@ -8,6 +8,7 @@ from player_anchor_system import STATE_FATAL_FALL
 from player_health_and_score import PlayerHealthAndScore, REASON_FALL
 from hazard_spawner import HazardSpawner
 from powerup_system import PowerUpSystem
+from consumable_system import ConsumableManager
 
 STATE_PLAYING = "PLAYING"
 BASE_DIR = Path(__file__).resolve().parent
@@ -40,8 +41,16 @@ class Gameplay:
         # Sistema de perigos: balas perdidas e telegrafagem laser
         self.hazard_spawner = HazardSpawner()
 
+        # Sistema de consumíveis coletáveis (vida / power-ups que saltam das janelas)
+        self.consumable_manager = ConsumableManager()
+
         # Sistema de limpeza e conserto de janelas (acionado com [E])
-        self.cleaning_system = PlayerCleaningSystem(self.player, self.building, self.stats)
+        self.cleaning_system = PlayerCleaningSystem(
+            self.player,
+            self.building,
+            self.stats,
+            consumable_manager=self.consumable_manager,
+        )
 
     def enter(self):
         """Chamado toda vez que o app entra no estado GAMEPLAY."""
@@ -53,6 +62,7 @@ class Gameplay:
         self.player.anchor_system.reset()
         self.building.generate()
         self.cleaning_system.reset()
+        self.consumable_manager.reset()
         self.stats.reset()
         self.hazard_spawner.reset()
         self.recenter_camera()
@@ -65,16 +75,22 @@ class Gameplay:
         self.camera_y = (self.player.y + 16) - self.app.HEIGHT / 2
 
     def carregar_recursos(self):
-        resource_file = BASE_DIR / "resources.pyxres"
-        if resource_file.exists():
-            try:
-                pyxel.load(str(resource_file), exclude_sounds=True, exclude_musics=True)
-            except TypeError:
-                pyxel.load(str(resource_file))
+        for res_candidate in (Path("resources.pyxres"), BASE_DIR / "resources.pyxres"):
+            if res_candidate.exists():
+                try:
+                    pyxel.load(str(res_candidate), exclude_sounds=True, exclude_musics=True)
+                except TypeError:
+                    pyxel.load(str(res_candidate))
+                break
 
-        bg_image = ROOT_DIR / "assets" / "BackGround" / "city1" / "1.png"
-        if bg_image.exists():
-            pyxel.images[1].load(0, 0, str(bg_image))
+        for bg_image in (
+            Path("assets/BackGround/city1/1.png"),
+            BASE_DIR / "assets" / "BackGround" / "city1" / "1.png",
+            ROOT_DIR / "assets" / "BackGround" / "city1" / "1.png",
+        ):
+            if bg_image.exists():
+                pyxel.images[1].load(0, 0, str(bg_image))
+                break
 
         # Carrega o spritesheet do personagem no banco 2
         self.player.carregar_recursos()
@@ -95,17 +111,18 @@ class Gameplay:
         )
 
     def update(self):
-        # Game Over: congela a simulação e aguarda o comando de retentar
+        # Game Over ou Vitória: congela a simulação e aguarda o comando de retentar
         if self.stats.is_game_over:
-            self.audio.update_gameplay_bgm(self.player.y, is_game_over=True)
+            self.audio.update_gameplay_bgm(self.player.y, is_game_over=not self.stats.is_victory)
             self.stats.update(is_idle=False)
             self.player.touch_controls.update()
             if self.stats.can_retry and self._retry_pressed():
                 self.start_new_run()
             return
 
-        # Atualiza o sistema de limpeza e reparo de janelas
+        # Atualiza o sistema de limpeza e reparo de janelas e animações da fachada
         self.cleaning_system.update()
+        self.building.update(target_window=self.cleaning_system.target_window)
 
         # Estabiliza o alpinista se estiver ativamente limpando/reparando
         self.player.anchor_system.is_working = self.cleaning_system.is_cleaning
@@ -116,6 +133,21 @@ class Gameplay:
 
         # Atualiza a movimentação e âncoras considerando a posição atual da câmera
         self.player.update(self.camera_x, self.camera_y)
+
+        # Atualiza consumíveis coletáveis (salto das janelas, queda lenta e coleta)
+        self.consumable_manager.update(
+            self.player,
+            self.stats,
+            self.cleaning_system,
+            self.camera_y,
+            self.app.HEIGHT,
+        )
+
+        # Condição de Vitória: chegou ao topo corporativo (cobertura Apex)
+        if self.player.state != STATE_FATAL_FALL and self.player.y <= self.building.apex_y + 20.0:
+            self.cleaning_system.is_cleaning = False
+            self.stats.trigger_victory()
+            return
 
         # Atualiza perigos urbanos (balas perdidas, telegrafagem laser e colisões)
         self.hazard_spawner.update(
@@ -171,8 +203,6 @@ class Gameplay:
                     pyxel.blt(x, y, 1, 0, 0, 256, 180)
 
     def draw(self):
-        pyxel.cls(0)
-
         # 1. Fundo da cidade com paralaxe
         self.draw_background()
 
@@ -182,6 +212,9 @@ class Gameplay:
 
         # 3. Partículas e feixes de limpeza/solda
         self.cleaning_system.draw_world(self.camera_x, self.camera_y)
+
+        # 3b. Consumíveis coletáveis saltando das janelas
+        self.consumable_manager.draw()
 
         # 4. Perigos urbanos: feixes de mira laser e balas traçantes neon
         self.hazard_spawner.draw(self.camera_x, self.camera_y)

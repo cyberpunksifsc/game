@@ -90,14 +90,41 @@ class Window:
 
         # 3. Moldura piscando em vermelho/laranja (alerta)
         frame_col = 8 if (self.shatter_timer // 2) % 2 == 0 else 9
-        pyxel.rectb(wx - 1, wy - 1, self.w + 2, self.h + 2, frame_col)
+        pyxel.rectb(wx - 2, wy - 2, self.w + 4, self.h + 4, frame_col)
 
-        self.shatter_timer -= 1
+    def update(self, is_target: bool = False):
+        """Atualiza temporizadores visuais da janela no loop de simulação (30 FPS)."""
+        if self.shatter_timer > 0:
+            self.shatter_timer -= 1
+        if is_target and self.state != WINDOW_STATE_CLEAN:
+            self.pulse_timer = (self.pulse_timer + 1) % 60
+
+    def draw_frame(self):
+        """Caixilho de alumínio embutido na fachada: recuo sombreado, moldura chanfrada e peitoril."""
+        wx = int(self.x)
+        wy = int(self.y)
+        w, h = self.w, self.h
+
+        # Recuo da abertura na parede (sombra projetada no topo/esquerda)
+        pyxel.rect(wx - 3, wy - 3, w + 6, h + 6, 0)
+        # Moldura metálica (alumínio escovado) com chanfro: luz em cima/esquerda, sombra embaixo/direita
+        pyxel.rect(wx - 2, wy - 2, w + 4, h + 4, 6)
+        pyxel.line(wx - 2, wy - 2, wx + w + 1, wy - 2, 7)
+        pyxel.line(wx - 2, wy - 2, wx - 2, wy + h + 1, 7)
+        pyxel.line(wx + w + 1, wy - 1, wx + w + 1, wy + h + 1, 12)
+
+        # Peitoril saliente sob a janela (pedra/metal com sombra na parede)
+        pyxel.rect(wx - 4, wy + h + 2, w + 8, 2, 12)
+        pyxel.line(wx - 4, wy + h + 2, wx + w + 3, wy + h + 2, 6)
+        pyxel.line(wx - 3, wy + h + 4, wx + w + 2, wy + h + 4, 0)
 
     def draw(self, camera_x: float, camera_y: float, is_target: bool = False):
         """Desenha a janela e seu estado visual com tiles e texturas."""
         wx = int(self.x)
         wy = int(self.y)
+
+        # Caixilho e peitoril ao redor do vidro (fora da área interativa)
+        self.draw_frame()
 
         # Fundo do interior do escritório (visível através do vidro)
         # Cor 1 (azul marinho escuro)
@@ -135,17 +162,24 @@ class Window:
             pyxel.line(wx + 14, wy + 14, wx + 10, wy + 22, 6)
             pyxel.pset(wx + 14, wy + 14, 8)  # furo central do projétil
 
-        # Moldura metálica da janela (cor 5: cinza escuro, contorno preto 0)
-        pyxel.rectb(wx, wy, self.w, self.h, 0)
-        pyxel.rectb(wx + 1, wy + 1, self.w - 2, self.h - 2, 5)
+        # Montante central (divide o vão em duas folhas de vidro) e borda interna de vedação
+        mx = wx + self.w // 2 - 1
+        pyxel.rect(mx, wy, 2, self.h, 6)
+        pyxel.line(mx + 1, wy, mx + 1, wy + self.h - 1, 12)
+        pyxel.rectb(wx, wy, self.w, self.h, 5)
 
-        # Se for o alvo em foco do alpinista, exibe retículo néon pulsante
+        if self.state == WINDOW_STATE_BROKEN:
+            # Rachaduras por cima do montante para manter a leitura de vidro estilhaçado
+            pyxel.line(wx + 14, wy + 14, wx + 26, wy + 10, 7)
+            pyxel.pset(wx + 14, wy + 14, 8)
+
+        # Se for o alvo em foco do alpinista, a moldura inteira acende em néon pulsante
         if is_target and self.state != WINDOW_STATE_CLEAN:
-            self.pulse_timer = (self.pulse_timer + 1) % 60
-            glow_col = 11 if (self.pulse_timer // 6) % 2 == 0 else 12
+            glow_col = 11 if (self.pulse_timer // 6) % 2 == 0 else 10
             if self.state == WINDOW_STATE_BROKEN:
                 glow_col = 9 if (self.pulse_timer // 6) % 2 == 0 else 8
-            pyxel.rectb(wx - 1, wy - 1, self.w + 2, self.h + 2, glow_col)
+            pyxel.rectb(wx - 2, wy - 2, self.w + 4, self.h + 4, glow_col)
+            pyxel.rectb(wx - 3, wy - 3, self.w + 6, self.h + 6, glow_col)
 
         # Barra de progresso do trabalho atual (se pausado ou em andamento)
         if self.progress > 0.0 and self.state != WINDOW_STATE_CLEAN:
@@ -182,18 +216,24 @@ class BuildingGenerator:
         self.building_width = self.building_right - self.building_left
         self.building_center_x = (self.building_left + self.building_right) // 2
 
-        # Alturas do mundo
+        # Alturas do mundo (28 andares: de base_y=1880 até apex_y=660)
         self.base_y = 1880.0     # Nível térreo da calçada/fundação
-        self.apex_y = 40.0       # Topo do arranha-céu (Apex)
+        self.apex_y = 660.0      # Topo do arranha-céu (Apex — 28 andares)
         self.floor_height = 42   # Distância vertical entre pavimentos
 
         # Colunas de janelas (4 colunas na fachada)
         self.window_w = 32
         self.window_h = 24
-        self.column_xs = [60, 114, 174, 228]
+        # Colunas centralizadas nos vãos entre as vigas verticais (vãos de 43px, vigas de 12px)
+        self.column_xs = [61, 116, 171, 226]
+        self.v_beam_xs = [self.building_left, 99, 154, 209, self.building_right - 12]
+        # Recuo vertical da janela acima da viga do pavimento (espaço para o peitoril)
+        self.window_sill_gap = 5
 
-        # Lista de todas as janelas geradas
+        # Lista de todas as janelas geradas e índice espacial por pavimento
         self.windows: list[Window] = []
+        self.windows_by_floor: dict[int, list[Window]] = {}
+        self._indexed_windows_id: int = 0
 
         # Gerar toda a estrutura do edifício
         self.generate()
@@ -201,6 +241,7 @@ class BuildingGenerator:
     def generate(self):
         """Gera todos os pavimentos de janelas da base até o topo."""
         self.windows.clear()
+        self.windows_by_floor.clear()
 
         # Determina o número de andares
         total_floors = int((self.base_y - 40 - self.apex_y) // self.floor_height)
@@ -211,9 +252,11 @@ class BuildingGenerator:
         for floor in range(total_floors):
             # Altura Y do chão deste andar (da base para cima)
             floor_y = self.base_y - 45 - (floor * self.floor_height)
+            floor_list: list[Window] = []
+            self.windows_by_floor[floor] = floor_list
 
             for col_idx, col_x in enumerate(self.column_xs):
-                win_y = floor_y - self.window_h
+                win_y = floor_y - self.window_h - self.window_sill_gap
 
                 # Distribuição contextual dos estados de janela (quantidade reduzida e equilibrada)
                 if floor == 0:
@@ -248,13 +291,34 @@ class BuildingGenerator:
                     initial_state=state,
                 )
                 self.windows.append(win)
+                floor_list.append(win)
+
+        self._indexed_windows_id = id(self.windows)
+
+    def _candidate_windows_near_y(self, y: float, floor_radius: int = 1):
+        """Retorna apenas as janelas dos pavimentos vizinhos à coordenada Y informada."""
+        if id(self.windows) != self._indexed_windows_id:
+            return self.windows
+        approx_floor = int(round((self.base_y - 45 - self.window_sill_gap - self.window_h / 2 - y) / self.floor_height))
+        candidates: list[Window] = []
+        for f in range(approx_floor - floor_radius, approx_floor + floor_radius + 1):
+            floor_wins = self.windows_by_floor.get(f)
+            if floor_wins:
+                candidates.extend(floor_wins)
+        return candidates
+
+    def update(self, target_window: Window | None = None):
+        """Atualiza temporizadores de animação das janelas."""
+        for win in self.windows:
+            if win.shatter_timer > 0 or win is target_window:
+                win.update(is_target=(win is target_window))
 
     def find_target_window(self, harness_x: float, harness_y: float) -> Window | None:
         """Encontra a janela mais próxima sob o alcance de trabalho do alpinista."""
         best_win = None
         best_dist = 9999.0
 
-        for win in self.windows:
+        for win in self._candidate_windows_near_y(harness_y, floor_radius=1):
             # Janelas limpas não precisam de trabalho
             if win.state == WINDOW_STATE_CLEAN:
                 continue
@@ -278,7 +342,7 @@ class BuildingGenerator:
 
     def find_window_at(self, px: float, py: float) -> Window | None:
         """Retorna a janela que contém o ponto (px, py), ou None."""
-        for win in self.windows:
+        for win in self._candidate_windows_near_y(py, floor_radius=1):
             # Filtro rápido por altura antes do teste completo
             if win.y <= py <= win.y + win.h and win.contains_point(px, py):
                 return win
@@ -289,24 +353,38 @@ class BuildingGenerator:
         min_y = camera_y - 40
         max_y = camera_y + screen_height + 40
 
-        # 1. Parede de fundo do edifício (concreto reforçado/placas de titânio escuro)
-        # Cor 1 (azul noite/preto industrial)
+        # 1. Parede da fachada: painéis de revestimento em titânio azul-noite
         visible_top = max(int(self.apex_y), int(camera_y - 20))
         visible_bottom = min(int(self.base_y + 60), int(camera_y + screen_height + 20))
         if visible_bottom > visible_top:
-            pyxel.rect(self.building_left, visible_top, self.building_width, visible_bottom - visible_top, 0)
-            pyxel.rectb(self.building_left, visible_top, self.building_width, visible_bottom - visible_top, 5)
+            pyxel.rect(self.building_left, visible_top, self.building_width, visible_bottom - visible_top, 1)
+            pyxel.rectb(self.building_left, visible_top, self.building_width, visible_bottom - visible_top, 0)
+
+            # Juntas dos painéis de revestimento (friso de luz sob a viga e junta central),
+            # alinhadas à grade de mundo para não "tremer" com a câmera
+            total_floors_wall = int((self.base_y - 40 - self.apex_y) // self.floor_height)
+            for floor in range(total_floors_wall + 1):
+                beam_y = int(self.base_y - 45 - floor * self.floor_height)
+                if not (min_y - self.floor_height <= beam_y <= max_y + self.floor_height):
+                    continue
+                for bx0, bx1 in zip(self.v_beam_xs[:-1], self.v_beam_xs[1:]):
+                    left = bx0 + 12
+                    right = bx1 - 1
+                    # Linha de luz no topo do painel (logo abaixo da viga) e junta vertical central
+                    pyxel.line(left, beam_y + 9, right, beam_y + 9, 5)
+                    mid = (left + right) // 2
+                    pyxel.line(mid, beam_y + 10, mid, beam_y + 11, 0)
 
         # 2. Vigas verticais da estrutura metálica externa
-        v_beam_xs = [self.building_left, 96, 150, 210, self.building_right - 12]
-        for vx in v_beam_xs:
+        for vx in self.v_beam_xs:
             if visible_bottom > visible_top:
-                # Coluna vertical cinza escuro com rebites
+                # Coluna vertical de aço com chanfro de luz e rebites
                 pyxel.rect(vx, visible_top, 12, visible_bottom - visible_top, 5)
                 pyxel.line(vx, visible_top, vx, visible_bottom, 0)
+                pyxel.line(vx + 1, visible_top, vx + 1, visible_bottom, 12)
                 pyxel.line(vx + 11, visible_top, vx + 11, visible_bottom, 0)
-                # Rebites espaçados
-                for ry in range(visible_top + (visible_top % 16), visible_bottom, 16):
+                # Rebites espaçados fixos na grade de coordenadas de mundo (sem jitter com a câmera)
+                for ry in range(visible_top + (-visible_top) % 16, visible_bottom, 16):
                     pyxel.pset(vx + 5, ry, 6)
 
         # 3. Vigas horizontais entre os pavimentos (onde âncoras se fixam perfeitamente)
@@ -359,9 +437,12 @@ class BuildingGenerator:
         if camera_y > ay + 150:
             return
 
-        # Viga mestre do topo
+        # Viga mestre do topo com faixa de chegada verde/dourada (Meta Apex)
         pyxel.rect(self.building_left - 24, ay - 20, self.building_width + 48, 24, 5)
         pyxel.rectb(self.building_left - 24, ay - 20, self.building_width + 48, 24, 0)
+        finish_col = 11 if (pyxel.frame_count // 10) % 2 == 0 else 10
+        pyxel.line(self.building_left - 22, ay + 2, self.building_right + 22, ay + 2, finish_col)
+        pyxel.line(self.building_left - 22, ay - 18, self.building_right + 22, ay - 18, 12)
 
         # Antena de transmissão corporativa
         ax = self.building_center_x

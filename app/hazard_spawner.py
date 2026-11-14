@@ -14,23 +14,23 @@ SOUND_GLASS_SHATTER = 13
 # Chance (por bala) de estilhaçar a primeira janela limpa que atravessar
 BULLET_WINDOW_BREAK_CHANCE = 0.06
 
-# Constantes de balanceamento da curva de dificuldade dinâmica (Semanas 10-12)
+# Constantes de balanceamento da curva de dificuldade dinâmica (teto final suavizado)
 BASE_MIN_INTERVAL = 110
 BASE_MAX_INTERVAL = 170
-MIN_ALLOWED_INTERVAL = 42
-MAX_ALLOWED_INTERVAL = 70
+MIN_ALLOWED_INTERVAL = 75   # Cooldown mínimo de 2.5s a 30 FPS no topo
+MAX_ALLOWED_INTERVAL = 90   # Cooldown máximo de 3.0s a 30 FPS no topo
 
 BASE_SPEED_MIN = 4.8
 BASE_SPEED_MAX = 6.0
-MAX_SPEED_MIN = 6.6
-MAX_SPEED_MAX = 8.4
+MAX_SPEED_MIN = 5.4
+MAX_SPEED_MAX = 6.2         # Velocidade máxima travada em 6.2 no topo
 
 BASE_TELEGRAPH_FRAMES = 20
-MIN_TELEGRAPH_FRAMES = 12
+MIN_TELEGRAPH_FRAMES = 15
 
 MAX_TIME_FRAMES = 3600  # 2 minutos a 30 FPS para atingir fator máximo de tempo
 START_ALTITUDE_Y = 1800.0
-APEX_ALTITUDE_Y = 150.0
+APEX_ALTITUDE_Y = 660.0
 
 
 class HazardSpawner:
@@ -47,6 +47,8 @@ class HazardSpawner:
         self.spawn_timer = 90  # 3 segundos de respiro antes da primeira bala
         self.min_interval = BASE_MIN_INTERVAL  # ~3.6s
         self.max_interval = BASE_MAX_INTERVAL  # ~5.6s
+        self._cached_diff_key: tuple[int, float] | None = None
+        self._cached_diff_val: float = 0.0
 
         # Drones corporativos de patrulha da fachada
         self.drone_manager = PatrolDroneManager()
@@ -81,18 +83,26 @@ class HazardSpawner:
         self.spawn_timer = 90
         self.min_interval = BASE_MIN_INTERVAL
         self.max_interval = BASE_MAX_INTERVAL
+        self._cached_diff_key = None
+        self._cached_diff_val = 0.0
         self.drone_manager.reset()
 
     def get_difficulty_factor(self, player_y: float = START_ALTITUDE_Y) -> float:
         """Calcula o fator de dificuldade normalizado [0.0, 1.0] combinando
         tempo de sobrevivência (55%) e altitude alcançada (45%).
         """
+        key = (self.elapsed_frames, float(player_y))
+        if self._cached_diff_key == key:
+            return self._cached_diff_val
         time_factor = min(1.0, max(0.0, self.elapsed_frames / float(MAX_TIME_FRAMES)))
         altitude_factor = min(
             1.0,
             max(0.0, (START_ALTITUDE_Y - player_y) / (START_ALTITUDE_Y - APEX_ALTITUDE_Y)),
         )
-        return min(1.0, max(0.0, 0.55 * time_factor + 0.45 * altitude_factor))
+        val = min(1.0, max(0.0, 0.55 * time_factor + 0.45 * altitude_factor))
+        self._cached_diff_key = key
+        self._cached_diff_val = val
+        return val
 
     def get_current_intervals(self, player_y: float = START_ALTITUDE_Y) -> tuple[int, int]:
         """Interpola linearmente os intervalos de spawn com base na dificuldade."""

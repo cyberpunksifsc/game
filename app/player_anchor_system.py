@@ -14,6 +14,13 @@ LINK_X_TOLERANCE = 55.0       # Tolerância horizontal (+/- pixels em relação 
 LINK_Y_MIN = 15.0             # Distância vertical mínima abaixo do apoio
 LINK_Y_MAX = 75.0            # Distância vertical máxima abaixo do apoio (alcance do cabo)
 
+# Limites estruturais da fachada do arranha-céu Apex-01 (impede plantar âncoras no céu vazio)
+FACADE_MIN_X = 44.0
+FACADE_MAX_X = 276.0
+FACADE_APEX_Y = 640.0
+FACADE_BASE_Y = 1880.0
+FATAL_FALL_BELOW_ANCHOR = 180.0
+
 # Estados do Jogador
 STATE_ANCHORED = "ANCHORED"   # Conectado à corda ativa
 STATE_AIRBORNE = "AIRBORNE"   # Em salto / queda livre após desconexão
@@ -212,6 +219,14 @@ class PlayerAnchorSystem:
 
         return best_anchor
 
+    @staticmethod
+    def is_valid_facade_point(target_x: float, target_y: float) -> bool:
+        """Verifica se o ponto alvo está dentro dos limites físicos da fachada do prédio."""
+        return (
+            FACADE_MIN_X <= target_x <= FACADE_MAX_X
+            and FACADE_APEX_Y <= target_y <= FACADE_BASE_Y
+        )
+
     def plant_anchor(self, target_x: float, target_y: float) -> bool:
         """Planta uma nova âncora na fachada, caso haja menos de 3 no total."""
         if len(self.anchors) >= MAX_ANCHORS:
@@ -222,6 +237,10 @@ class PlayerAnchorSystem:
         dist = math.hypot(target_x - hx, target_y - hy)
         if dist > MAX_PLANT_RANGE:
             self.set_feedback("FORA DE ALCANCE DA ARMA", 45, 9)
+            return False
+
+        if not self.is_valid_facade_point(target_x, target_y):
+            self.set_feedback("MIRE NA FACHADA DO PREDIO!", 45, 9)
             return False
 
         # Evita plantar exatamente em cima de outra âncora
@@ -521,7 +540,17 @@ class PlayerAnchorSystem:
         if link_input:
             self.try_link(world_mouse_x, world_mouse_y)
 
-        # Condição de Queda Fatal (caiu abaixo do limite visível da tela)
-        if self.y > camera_y + screen_height + 35:
+        # Condição de Queda Fatal:
+        # 1) Caiu abaixo da base térrea do edifício,
+        # 2) Caiu muito abaixo da âncora mais baixa plantada (sem chance de recuperação), ou
+        # 3) Saiu do limite inferior visível da câmera
+        lowest_anchor_y = (
+            max(a.y for a in self.anchors) if self.anchors else self.source_anchor_y
+        )
+        if (
+            self.y > FACADE_BASE_Y + 20.0
+            or self.y > lowest_anchor_y + FATAL_FALL_BELOW_ANCHOR
+            or self.y > camera_y + screen_height + 35
+        ):
             self.state = STATE_FATAL_FALL
             self.play_sound(5)
