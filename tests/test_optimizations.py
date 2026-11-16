@@ -72,13 +72,14 @@ def test_building_spatial_lookup_and_update_timers():
 
 
 def test_plant_anchor_rejects_points_outside_facade():
-    sys = PlayerAnchorSystem(start_anchor_x=60, start_anchor_y=680, initial_rope_length=30)
+    start_y = FACADE_APEX_Y + 40.0
+    sys = PlayerAnchorSystem(start_anchor_x=60, start_anchor_y=start_y, initial_rope_length=30)
     # No céu à esquerda da fachada (x < FACADE_MIN_X) Within range
-    assert sys.plant_anchor(FACADE_MIN_X - 10, 690) is False
+    assert sys.plant_anchor(FACADE_MIN_X - 10, start_y + 10.0) is False
     # Acima do teto Apex (y < FACADE_APEX_Y) Within range
     assert sys.plant_anchor(60, FACADE_APEX_Y - 15) is False
     # Dentro da fachada e dentro do alcance: válido
-    assert sys.plant_anchor(90, 680) is True
+    assert sys.plant_anchor(90, start_y) is True
     assert sys.is_valid_facade_point(FACADE_MAX_X, FACADE_BASE_Y) is True
 
 

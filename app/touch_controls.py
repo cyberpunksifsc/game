@@ -26,11 +26,23 @@ class TouchControls:
         self.btnp_jump = False
         self.btnp_clean = False
         self.btnp_retrieve = False
+        # Coordenada (x, y) de tela de um novo toque fora da UI (para plantar âncora durante multi-touch)
+        self.btnp_world_tap: tuple[float, float] | None = None
 
         # Histórico do frame anterior para detecção de borda de subida (btnp)
         self._prev_jump = False
         self._prev_clean = False
         self._prev_retrieve = False
+
+        # Memória curta (grace/latch) do D-Pad para permitir salto direcional mesmo em telas
+        # onde o navegador alterna o cursor único do D-Pad para o botão SALTO
+        self._latched_horiz = 0       # -1 (esquerda), 0 (neutro), +1 (direita)
+        self._horiz_grace_timer = 0
+        self._latched_vert = 0        # -1 (cima), 0 (neutro), +1 (baixo)
+        self._vert_grace_timer = 0
+
+        # Lista opcional de toques simultâneos injetados (usado por multi-touch Web e testes)
+        self.extra_touches: list[tuple[float, float]] = []
 
         # Definição dos retângulos de toque em coordenadas de tela (320x180)
         # D-Pad (Canto inferior esquerdo: balanço horizontal e cabo vertical)
@@ -47,9 +59,123 @@ class TouchControls:
         # Botão discreto para alternar modo touch (Canto superior direito, abaixo do placar)
         self.rect_toggle = (268, 32, 48, 11)
 
-    def _point_in_rect(self, px: float, py: float, rect: tuple[int, int, int, int]) -> bool:
+        self._web_multitouch_ready = False
+        self._init_web_multitouch()
+
+    def _init_web_multitouch(self):
+        """Inicializa rastreador multi-touch HTML5 via Pyodide (js) quando rodando no navegador."""
+        try:
+            import js  # type: ignore
+
+            js.eval(
+                f"""
+                if (!window._apexTouchTrackerInstalled) {{
+                    window._apexTouchTrackerInstalled = true;
+                    window._apexActiveTouches = [];
+                    window._apexNewTouches = [];
+                    const SCREEN_W = {self.screen_w};
+                    const SCREEN_H = {self.screen_h};
+                    const mapTouch = (t) => {{
+                        const canvas = document.getElementById("canvas") || document.querySelector("canvas");
+                        if (!canvas) return null;
+                        const rect = canvas.getBoundingClientRect();
+                        if (rect.width <= 0 || rect.height <= 0) return null;
+                        const scale = Math.min(rect.width / SCREEN_W, rect.height / SCREEN_H);
+                        const viewW = SCREEN_W * scale;
+                        const viewH = SCREEN_H * scale;
+                        const offsetX = rect.left + (rect.width - viewW) * 0.5;
+                        const offsetY = rect.top + (rect.height - viewH) * 0.5;
+                        const px = (t.clientX - offsetX) / scale;
+                        const py = (t.clientY - offsetY) / scale;
+                        if (px < -16 || px > SCREEN_W + 16 || py < -16 || py > SCREEN_H + 16) return null;
+                        return [
+                            Math.max(0, Math.min(SCREEN_W, px)),
+                            Math.max(0, Math.min(SCREEN_H, py))
+                        ];
+                    }};
+                    const inRect = (px, py, rx, ry, rw, rh, pad = 3) => (
+                        px >= rx - pad && px <= rx + rw + pad &&
+                        py >= ry - pad && py <= ry + rh + pad
+                    );
+                    const syncTouches = (e) => {{
+                        const active = [];
+                        if (e.touches) {{
+                            for (let i = 0; i < e.touches.length; i++) {{
+                                const pt = mapTouch(e.touches[i]);
+                                if (pt) active.push(pt);
+                            }}
+                        }}
+                        window._apexActiveTouches = active;
+                        if (typeof _virtualGamepadStates !== "undefined") {{
+                            let up = false, down = false, left = false, right = false;
+                            let a = false, x = false, y = false;
+                            for (let i = 0; i < active.length; i++) {{
+                                const [px, py] = active[i];
+                                if (inRect(px, py, 31, 102, 22, 22)) up = true;
+                                if (inRect(px, py, 31, 150, 22, 22)) down = true;
+                                if (inRect(px, py, 8, 126, 24, 22)) left = true;
+                                if (inRect(px, py, 54, 126, 24, 22)) right = true;
+                                if (inRect(px, py, 264, 136, 48, 28)) a = true;
+                                if (inRect(px, py, 212, 136, 48, 28)) x = true;
+                                if (inRect(px, py, 264, 104, 48, 26)) y = true;
+                            }}
+                            _virtualGamepadStates[0] = up;
+                            _virtualGamepadStates[1] = down;
+                            _virtualGamepadStates[2] = left;
+                            _virtualGamepadStates[3] = right;
+                            _virtualGamepadStates[4] = a;
+                            _virtualGamepadStates[6] = x;
+                            _virtualGamepadStates[7] = y;
+                        }}
+                        if (e.type === "touchstart" && e.changedTouches) {{
+                            for (let i = 0; i < e.changedTouches.length; i++) {{
+                                const pt = mapTouch(e.changedTouches[i]);
+                                if (pt) window._apexNewTouches.push(pt);
+                            }}
+                        }}
+                    }};
+                    window.addEventListener("touchstart", syncTouches, {{ passive: true, capture: true }});
+                    window.addEventListener("touchmove", syncTouches, {{ passive: true, capture: true }});
+                    window.addEventListener("touchend", syncTouches, {{ passive: true, capture: true }});
+                    window.addEventListener("touchcancel", syncTouches, {{ passive: true, capture: true }});
+                }}
+                """
+            )
+            self._web_multitouch_ready = True
+        except BaseException:
+            self._web_multitouch_ready = False
+
+    def _read_web_touches(self) -> tuple[list[tuple[float, float]], list[tuple[float, float]]]:
+        """Lê todos os dedos ativos e novos toques registrados pelo navegador."""
+        if not self._web_multitouch_ready:
+            return ([], [])
+        try:
+            import js  # type: ignore
+
+            raw_active = js.window._apexActiveTouches
+            raw_new = js.window._apexNewTouches
+            active = [(float(pt[0]), float(pt[1])) for pt in raw_active] if raw_active else []
+            new_pts = [(float(pt[0]), float(pt[1])) for pt in raw_new] if raw_new else []
+            if raw_new and len(new_pts) > 0:
+                js.window._apexNewTouches = js.eval("[]")
+            return (active, new_pts)
+        except BaseException:
+            return ([], [])
+
+    @property
+    def recent_horiz_dir(self) -> int:
+        """Retorna a direção horizontal (-1, 0, +1) ativa ou recentemente segurada no D-Pad."""
+        if self.btn_left and not self.btn_right:
+            return -1
+        if self.btn_right and not self.btn_left:
+            return 1
+        if self._horiz_grace_timer > 0:
+            return self._latched_horiz
+        return 0
+
+    def _point_in_rect(self, px: float, py: float, rect: tuple[int, int, int, int], pad: float = 0.0) -> bool:
         rx, ry, rw, rh = rect
-        return rx <= px <= rx + rw and ry <= py <= ry + rh
+        return (rx - pad) <= px <= (rx + rw + pad) and (ry - pad) <= py <= (ry + rh + pad)
 
     def is_touching_ui(self, screen_x: float, screen_y: float) -> bool:
         """Verifica se as coordenadas do toque coincidem com algum botão da interface virtual.
@@ -72,30 +198,46 @@ class TouchControls:
             self.rect_clean,
             self.rect_retrieve,
         ):
-            if self._point_in_rect(screen_x, screen_y, r):
+            if self._point_in_rect(screen_x, screen_y, r, pad=3.0):
                 return True
         return False
 
     def update(self):
-        """Atualiza a leitura dos toques na tela e gamepads a cada frame."""
+        """Atualiza a leitura dos toques na tela (incluindo multi-touch) e gamepads a cada frame."""
         mx = pyxel.mouse_x
         my = pyxel.mouse_y
         is_touching = pyxel.btn(pyxel.MOUSE_BUTTON_LEFT)
         is_touch_down = pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)
 
+        web_active, web_new = self._read_web_touches()
+
         # 1. Alternância de exibição dos controles de toque (tecla T ou clique no botão [TOUCH])
         toggle_clicked = is_touch_down and self._point_in_rect(mx, my, self.rect_toggle)
+        if not toggle_clicked and web_new:
+            toggle_clicked = any(self._point_in_rect(nx, ny, self.rect_toggle) for nx, ny in web_new)
         if pyxel.btnp(pyxel.KEY_T) or toggle_clicked:
             self.enabled = not self.enabled
 
         # Auto-reativação: se tocar nas áreas dos botões virtuais enquanto oculto, reexibe
-        if not self.enabled and is_touch_down:
-            for r in (self.rect_jump, self.rect_clean, self.rect_left, self.rect_right):
-                if self._point_in_rect(mx, my, r):
+        if not self.enabled and (is_touch_down or web_new):
+            check_pts = [(mx, my)] if is_touch_down else []
+            check_pts.extend(web_new)
+            for px, py in check_pts:
+                if any(
+                    self._point_in_rect(px, py, r, pad=3.0)
+                    for r in (self.rect_jump, self.rect_clean, self.rect_left, self.rect_right)
+                ):
                     self.enabled = True
                     break
 
-        # 2. Leitura dos botões virtuais de toque na tela
+        # Detecta novos toques no mundo (fora dos botões virtuais) durante multi-touch
+        self.btnp_world_tap = None
+        for nx, ny in web_new:
+            if not self.is_touching_ui(nx, ny):
+                self.btnp_world_tap = (nx, ny)
+                break
+
+        # 2. Leitura dos botões virtuais de toque na tela (suporta múltiplos dedos simultâneos)
         touch_left = False
         touch_right = False
         touch_up = False
@@ -104,23 +246,100 @@ class TouchControls:
         touch_clean = False
         touch_retrieve = False
 
-        if self.enabled and is_touching:
-            touch_left = self._point_in_rect(mx, my, self.rect_left)
-            touch_right = self._point_in_rect(mx, my, self.rect_right)
-            touch_up = self._point_in_rect(mx, my, self.rect_up)
-            touch_down = self._point_in_rect(mx, my, self.rect_down)
-            touch_jump = self._point_in_rect(mx, my, self.rect_jump)
-            touch_clean = self._point_in_rect(mx, my, self.rect_clean)
-            touch_retrieve = self._point_in_rect(mx, my, self.rect_retrieve)
+        active_points: list[tuple[float, float]] = []
+        if is_touching:
+            active_points.append((float(mx), float(my)))
+        if web_active:
+            active_points.extend(web_active)
+        if self.extra_touches:
+            active_points.extend(self.extra_touches)
 
-        # 3. Suporte a Gamepad físico (Android via Bluetooth/OTG e Desktop)
-        pad_left = pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT)
-        pad_right = pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT)
-        pad_up = pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_UP)
-        pad_down = pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_DOWN)
-        pad_jump = pyxel.btn(pyxel.GAMEPAD1_BUTTON_A)
+        # Também considera toques rápidos (tap de 1 frame em web_new) nos botões de ação
+        tap_points = list(active_points)
+        if web_new:
+            tap_points.extend(web_new)
+
+        if self.enabled and tap_points:
+            for px, py in active_points:
+                if self._point_in_rect(px, py, self.rect_left, pad=3.0):
+                    touch_left = True
+                if self._point_in_rect(px, py, self.rect_right, pad=3.0):
+                    touch_right = True
+                if self._point_in_rect(px, py, self.rect_up, pad=3.0):
+                    touch_up = True
+                if self._point_in_rect(px, py, self.rect_down, pad=3.0):
+                    touch_down = True
+                if self._point_in_rect(px, py, self.rect_clean, pad=3.0):
+                    touch_clean = True
+
+            for px, py in tap_points:
+                if self._point_in_rect(px, py, self.rect_jump, pad=3.0):
+                    touch_jump = True
+                if self._point_in_rect(px, py, self.rect_clean, pad=3.0):
+                    touch_clean = True
+                if self._point_in_rect(px, py, self.rect_retrieve, pad=3.0):
+                    touch_retrieve = True
+
+        # Atualiza e aplica memória curta (latch/grace) do D-Pad:
+        # Se o jogador estava segurando o D-Pad e o navegador/OS moveu o ponteiro único
+        # para o botão SALTO/[E]/[R] ao tocar com o segundo polegar, mantém a direção ativa!
+        if touch_left and not touch_right:
+            self._latched_horiz = -1
+            self._horiz_grace_timer = 10
+        elif touch_right and not touch_left:
+            self._latched_horiz = 1
+            self._horiz_grace_timer = 10
+        elif self._horiz_grace_timer > 0:
+            self._horiz_grace_timer -= 1
+            if self._horiz_grace_timer == 0:
+                self._latched_horiz = 0
+
+        if touch_up and not touch_down:
+            self._latched_vert = -1
+            self._vert_grace_timer = 10
+        elif touch_down and not touch_up:
+            self._latched_vert = 1
+            self._vert_grace_timer = 10
+        elif self._vert_grace_timer > 0:
+            self._vert_grace_timer -= 1
+            if self._vert_grace_timer == 0:
+                self._latched_vert = 0
+
+        action_touched = touch_jump or touch_clean or touch_retrieve
+        if action_touched and not touch_left and not touch_right and self._horiz_grace_timer > 0:
+            if self._latched_horiz < 0:
+                touch_left = True
+            elif self._latched_horiz > 0:
+                touch_right = True
+        if action_touched and not touch_up and not touch_down and self._vert_grace_timer > 0:
+            if self._latched_vert < 0:
+                touch_up = True
+            elif self._latched_vert > 0:
+                touch_down = True
+
+        # 3. Suporte a Gamepad físico e virtual (D-Pad + Analógico Esquerdo + Botões A/B/X/Y)
+        axis_x = 0
+        axis_y = 0
+        try:
+            axis_x = pyxel.btnv(pyxel.GAMEPAD1_AXIS_LEFTX)
+            axis_y = pyxel.btnv(pyxel.GAMEPAD1_AXIS_LEFTY)
+        except BaseException:
+            pass
+
+        pad_left = pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT) or (axis_x < -8000)
+        pad_right = pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT) or (axis_x > 8000)
+        pad_up = pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_UP) or (axis_y < -8000)
+        pad_down = pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_DOWN) or (axis_y > 8000)
+        pad_jump = pyxel.btn(pyxel.GAMEPAD1_BUTTON_A) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_B)
         pad_clean = pyxel.btn(pyxel.GAMEPAD1_BUTTON_X)
         pad_retrieve = pyxel.btn(pyxel.GAMEPAD1_BUTTON_Y)
+
+        if pad_left and not pad_right:
+            self._latched_horiz = -1
+            self._horiz_grace_timer = max(self._horiz_grace_timer, 6)
+        elif pad_right and not pad_left:
+            self._latched_horiz = 1
+            self._horiz_grace_timer = max(self._horiz_grace_timer, 6)
 
         # 4. Combina toques virtuais e gamepad
         self.btn_left = touch_left or pad_left

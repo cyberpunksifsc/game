@@ -10,14 +10,14 @@ MAX_ROPE_LENGTH = 82.0       # Comprimento máximo da corda (descer)
 # Regras de Atracamento / Link no ar:
 # Menos livre horizontalmente (player deve estar na coluna do apoio)
 # Mais livre verticalmente (faixa vertical ampla de suspensão abaixo do apoio)
-LINK_X_TOLERANCE = 55.0       # Tolerância horizontal (+/- pixels em relação ao eixo X do apoio)
+LINK_X_TOLERANCE = 60.0       # Tolerância horizontal (+/- pixels em relação ao eixo X do apoio)
 LINK_Y_MIN = 15.0             # Distância vertical mínima abaixo do apoio
-LINK_Y_MAX = 75.0            # Distância vertical máxima abaixo do apoio (alcance do cabo)
+LINK_Y_MAX = 80.0            # Distância vertical máxima abaixo do apoio (alcance do cabo)
 
 # Limites estruturais da fachada do arranha-céu Apex-01 (impede plantar âncoras no céu vazio)
 FACADE_MIN_X = 44.0
 FACADE_MAX_X = 276.0
-FACADE_APEX_Y = 640.0
+FACADE_APEX_Y = 1060.0
 FACADE_BASE_Y = 1880.0
 FATAL_FALL_BELOW_ANCHOR = 180.0
 
@@ -29,13 +29,14 @@ STATE_FATAL_FALL = "FATAL_FALL"  # Game over por queda
 SHOOT_ANIM_TICKS = 14         # Duração da animação de disparo/recolhimento do gancho
 
 # Parâmetros de Balanço e Força de Movimento (mais lento e controlado)
-SWING_FORCE = 0.0016          # Força suave de impulso do alpinista
+SWING_FORCE = 0.0020          # Força responsiva de impulso do alpinista
 MAX_ANGULAR_VEL = 0.038       # Velocidade angular máxima (impede balanços excessivos)
 MAX_SWING_ANGLE = math.radians(78)  # Ângulo máximo (~78°, arco total < 180°, impede giros de 360°)
 
 # Dinâmica de Salto e Desconexão (lançamento mais moderado)
 LAUNCH_SPEED_FACTOR = 0.70    # Redução da velocidade tangencial transferida ao salto
 MAX_LAUNCH_VX = 2.8           # Velocidade horizontal máxima ao saltar
+DIRECTIONAL_JUMP_VX = 1.65    # Impulso lateral garantido ao saltar segurando direção no D-Pad/joystick
 LAUNCH_UPWARD_IMPULSE = 1.4   # Impulso vertical para cima suavizado
 AIRBORNE_DRAG = 0.985         # Resistência do ar durante o salto
 
@@ -279,9 +280,10 @@ class PlayerAnchorSystem:
         self.play_sound(1)
         return True
 
-    def jump(self):
+    def jump(self, horiz_dir: int = 0):
         """Executa o salto a partir da corda ativa, desconectando o cabo
-        e transferindo o momentum angular moderado para queda livre controlada.
+        e transferindo o momentum angular moderado (e eventual direção segurada no
+        joystick/D-Pad) para queda livre controlada.
         """
         active = self.get_active_anchor()
         if not active or self.state != STATE_ANCHORED:
@@ -296,6 +298,14 @@ class PlayerAnchorSystem:
         # Aplica LAUNCH_SPEED_FACTOR e teto máximo MAX_LAUNCH_VX para saltos menos velozes
         tangential_speed = (self.angular_vel * self.rope_length) * LAUNCH_SPEED_FACTOR
         raw_vx = tangential_speed * math.cos(self.angle)
+
+        # Se o jogador estiver segurando direção no D-Pad/joystick/teclado ao saltar,
+        # garante impulso lateral na direção segurada (mesmo no pico do balanço onde angular_vel ≈ 0)
+        if horiz_dir > 0:
+            raw_vx = max(raw_vx + 0.85, DIRECTIONAL_JUMP_VX)
+        elif horiz_dir < 0:
+            raw_vx = min(raw_vx - 0.85, -DIRECTIONAL_JUMP_VX)
+
         self.vx = max(-MAX_LAUNCH_VX, min(MAX_LAUNCH_VX, raw_vx))
         self.vy = -tangential_speed * math.sin(self.angle) - LAUNCH_UPWARD_IMPULSE
 
@@ -468,23 +478,34 @@ class PlayerAnchorSystem:
         self.vx = max(-MAX_LAUNCH_VX, min(MAX_LAUNCH_VX, raw_vx))
         self.vy = -tangential * math.sin(effective_angle)
 
-        # 4. Salto (ESPAÇO, botão virtual SALTO ou Gamepad A)
+        # 4. Salto (ESPAÇO, botão virtual SALTO ou Gamepad A/B)
         jump_input = (
             pyxel.btnp(pyxel.KEY_SPACE)
             or (self.touch_controls and self.touch_controls.btnp_jump)
             or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A)
+            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
         )
         if jump_input and not self.is_working:
-            self.jump()
+            horiz_dir = 0
+            if moving_left and not moving_right:
+                horiz_dir = -1
+            elif moving_right and not moving_left:
+                horiz_dir = 1
+            elif self.touch_controls is not None and hasattr(self.touch_controls, "recent_horiz_dir"):
+                horiz_dir = self.touch_controls.recent_horiz_dir
+            self.jump(horiz_dir=horiz_dir)
 
         # Coordenadas do mouse no espaço de mundo
         world_mouse_x = camera_x + pyxel.mouse_x
         world_mouse_y = camera_y + pyxel.mouse_y
         touch_on_ui = self.touch_controls and self.touch_controls.is_touching_ui(pyxel.mouse_x, pyxel.mouse_y)
+        multi_tap = getattr(self.touch_controls, "btnp_world_tap", None) if self.touch_controls else None
 
         # 5. Ação de plantar âncora (Toque na tela ou Mouse Esq fora dos botões virtuais)
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui:
             self.plant_anchor(world_mouse_x, world_mouse_y)
+        elif multi_tap is not None:
+            self.plant_anchor(camera_x + multi_tap[0], camera_y + multi_tap[1])
 
         # 6. Ação de recolher âncora (Mouse Dir, tecla R, botão touch REC ou Gamepad Y)
         retrieve_input = (
@@ -516,9 +537,9 @@ class PlayerAnchorSystem:
             or (self.touch_controls and self.touch_controls.btn_right)
         )
         if air_left:
-            self.vx -= 0.06
+            self.vx -= 0.09
         if air_right:
-            self.vx += 0.06
+            self.vx += 0.09
 
         self.vx = max(-MAX_LAUNCH_VX, min(MAX_LAUNCH_VX, self.vx))
 
@@ -528,17 +549,23 @@ class PlayerAnchorSystem:
         world_mouse_x = camera_x + pyxel.mouse_x
         world_mouse_y = camera_y + pyxel.mouse_y
         touch_on_ui = self.touch_controls and self.touch_controls.is_touching_ui(pyxel.mouse_x, pyxel.mouse_y)
+        multi_tap = getattr(self.touch_controls, "btnp_world_tap", None) if self.touch_controls else None
 
-        # Tentativa de Link no ar (ESPAÇO, E, botões virtuais SALTO/LIMPAR, Gamepad A, ou toque no apoio)
+        # Tentativa de Link no ar (ESPAÇO, E, botões virtuais SALTO/LIMPAR, Gamepad A/B, ou toque no apoio)
         link_input = (
             pyxel.btnp(pyxel.KEY_SPACE)
             or pyxel.btnp(pyxel.KEY_E)
             or (self.touch_controls and (self.touch_controls.btnp_jump or self.touch_controls.btnp_clean))
             or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A)
+            or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B)
             or (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui)
+            or (multi_tap is not None)
         )
         if link_input:
-            self.try_link(world_mouse_x, world_mouse_y)
+            if multi_tap is not None and not (pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui):
+                self.try_link(camera_x + multi_tap[0], camera_y + multi_tap[1])
+            else:
+                self.try_link(world_mouse_x, world_mouse_y)
 
         # Condição de Queda Fatal:
         # 1) Caiu abaixo da base térrea do edifício,

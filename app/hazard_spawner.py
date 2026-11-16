@@ -30,7 +30,7 @@ MIN_TELEGRAPH_FRAMES = 15
 
 MAX_TIME_FRAMES = 3600  # 2 minutos a 30 FPS para atingir fator máximo de tempo
 START_ALTITUDE_Y = 1800.0
-APEX_ALTITUDE_Y = 660.0
+APEX_ALTITUDE_Y = 1080.0
 
 
 class HazardSpawner:

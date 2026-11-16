@@ -22,15 +22,15 @@ from player_health_and_score import (
 )
 
 
-def test_building_has_28_floors():
+def test_building_has_18_floors():
     building = BuildingGenerator()
     total_floors = int((building.base_y - 40 - building.apex_y) // building.floor_height)
-    assert total_floors == 28
-    assert len(building.windows) == 28 * 4
+    assert total_floors == 18
+    assert len(building.windows) == 18 * 4
     assert building.apex_y == pytest.approx(APEX_ALTITUDE_Y)
 
 
-def test_drones_all_within_28_floor_building_span():
+def test_drones_all_within_18_floor_building_span():
     building = BuildingGenerator()
     for alt in DEFAULT_DRONE_ALTITUDES:
         assert building.apex_y < alt < 1800.0
@@ -77,3 +77,73 @@ def test_trigger_victory_calculates_bonuses_and_resets_cleanly():
     assert stats.hp_bonus == 0
     assert stats.efficiency_bonus == 0
     assert stats.score == 0
+
+
+def test_multitouch_and_single_pointer_dpad_plus_jump(monkeypatch):
+    import pyxel
+    from touch_controls import TouchControls
+    from player_anchor_system import (
+        DIRECTIONAL_JUMP_VX,
+        STATE_AIRBORNE,
+        PlayerAnchorSystem,
+    )
+
+    state = {"mx": 0, "my": 0, "down": False, "pressed": False}
+    monkeypatch.setattr(pyxel, "mouse_x", 0, raising=False)
+    monkeypatch.setattr(pyxel, "mouse_y", 0, raising=False)
+    monkeypatch.setattr(
+        pyxel,
+        "btn",
+        lambda k: state["down"] if k == pyxel.MOUSE_BUTTON_LEFT else False,
+    )
+    monkeypatch.setattr(
+        pyxel,
+        "btnp",
+        lambda k, *a, **kw: state["pressed"] if k == pyxel.MOUSE_BUTTON_LEFT else False,
+    )
+    monkeypatch.setattr(pyxel, "btnv", lambda k: 0)
+
+    tc = TouchControls()
+    sys = PlayerAnchorSystem(touch_controls=tc)
+
+    # Caso 1: Multi-touch real (Dedo 1 segurando D-Pad Direita + Dedo 2 tocando SALTO)
+    state["down"] = True
+    state["pressed"] = False
+    monkeypatch.setattr(pyxel, "mouse_x", 64, raising=False)   # dentro de rect_right
+    monkeypatch.setattr(pyxel, "mouse_y", 136, raising=False)
+    tc.extra_touches = [(280.0, 150.0)]  # segundo dedo dentro de rect_jump
+
+    tc.update()
+    assert tc.btn_right is True
+    assert tc.btnp_jump is True
+
+    sys.update()
+    assert sys.state == STATE_AIRBORNE
+    assert sys.vx >= DIRECTIONAL_JUMP_VX
+
+    # Caso 2: Mesmo quando o navegador move o ponteiro único do D-Pad Esquerda para SALTO
+    tc.extra_touches = []
+    tc._prev_jump = False
+    sys.reset()
+
+    # Frame 1: Segurando D-Pad Esquerda
+    monkeypatch.setattr(pyxel, "mouse_x", 18, raising=False)   # dentro de rect_left
+    monkeypatch.setattr(pyxel, "mouse_y", 136, raising=False)
+    state["down"] = True
+    tc.update()
+    sys.update()
+    assert tc.btn_left is True
+
+    # Frame 2: Segundo polegar toca em SALTO e o navegador desloca mouse_x/mouse_y para rect_jump
+    monkeypatch.setattr(pyxel, "mouse_x", 280, raising=False)  # dentro de rect_jump
+    monkeypatch.setattr(pyxel, "mouse_y", 150, raising=False)
+    tc.update()
+    assert tc.btn_left is True
+    assert tc.btnp_jump is True
+
+    # Mesmo que angular_vel tenha zerado no pico do balanço, saltar segurando esquerda impulsiona para a esquerda
+    sys.angular_vel = 0.0
+    sys.update()
+    assert sys.state == STATE_AIRBORNE
+    assert sys.vx <= -DIRECTIONAL_JUMP_VX
+

@@ -216,9 +216,9 @@ class BuildingGenerator:
         self.building_width = self.building_right - self.building_left
         self.building_center_x = (self.building_left + self.building_right) // 2
 
-        # Alturas do mundo (28 andares: de base_y=1880 até apex_y=660)
+        # Alturas do mundo (18 andares: de base_y=1880 até apex_y=1080)
         self.base_y = 1880.0     # Nível térreo da calçada/fundação
-        self.apex_y = 660.0      # Topo do arranha-céu (Apex — 28 andares)
+        self.apex_y = 1080.0     # Topo do arranha-céu (Apex — 18 andares)
         self.floor_height = 42   # Distância vertical entre pavimentos
 
         # Colunas de janelas (4 colunas na fachada)
