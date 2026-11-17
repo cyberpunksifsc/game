@@ -117,25 +117,31 @@ python app/main.py
 
 ### 2. Executar a Suíte de Testes Automatizados
 
-O projeto conta com testes automatizados cobrindo física de ancoragem, limpeza, saúde/pontuação, ameaças, controles e documentação:
+O projeto conta com testes automatizados cobrindo física de ancoragem, limpeza, saúde/pontuação, ameaças, controles, integração com a Feira de Jogos e documentação:
 
 ```bash
-pytest
+PYTHONPATH=app pytest
 ```
 
 ### 3. Exportar para Web (HTML5 / Pyxel Web)
 
-O motor Pyxel permite empacotar o jogo em um arquivo `.pyxapp` e gerar uma página HTML autossuficiente para execução direto no navegador (Desktop e Mobile):
+Para gerar o pacote `.pyxapp` e o arquivo HTML autocontido (`dist/app.html` e `app/app.html`) já com os assets de áudio/background empacotados, gamepad nativo desativado e script do Google One-Tap (`gsi/client`) injetado, utilize o script de build automatizado:
 
 ```bash
-# 1. Empacotar o diretório app/ em um pacote executável Pyxel (.pyxapp)
+bash tools/build_web.sh
+```
+
+Internamente, o script monta um diretório limpo de staging (sem incluir `venv/` ou `__pycache__/`) e executa os comandos do Pyxel Web:
+
+```bash
+# 1. Empacotar o diretório de runtime em um pacote executável Pyxel (.pyxapp)
 pyxel package app app/main.py
 
 # 2. Converter o pacote .pyxapp em um arquivo HTML autocontido
 pyxel app2html app.pyxapp
 ```
 
-O arquivo `app.html` gerado pode ser aberto diretamente no navegador ou hospedado em serviços estáticos (como GitHub Pages ou Itch.io).
+O arquivo `dist/app.html` (ou `app/app.html`) gerado pode ser aberto diretamente no navegador ou hospedado na plataforma da **Feira de Jogos**, GitHub Pages ou Itch.io.
 
 ---
 
