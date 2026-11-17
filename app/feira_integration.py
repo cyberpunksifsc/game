@@ -159,76 +159,9 @@ class FeiraIntegration:
                             productId: {self.product_id},
                             creditValue: {self.credit_value},
                             pollTimer: null,
-                            overlay: null,
-                            btnContainer: null,
-                            gsiInitialized: false,
                         }};
-
-                        const ensureOverlay = () => {{
-                            if (state.overlay && document.body.contains(state.overlay)) {{
-                                return state.overlay;
-                            }}
-                            const host = document.createElement("div");
-                            host.id = "apex-feira-auth-overlay";
-                            host.style.position = "fixed";
-                            host.style.zIndex = "9999";
-                            host.style.display = "none";
-                            host.style.flexDirection = "column";
-                            host.style.alignItems = "center";
-                            host.style.justifyContent = "center";
-                            host.style.pointerEvents = "auto";
-                            host.style.transform = "translate(-50%, -50%)";
-
-                            // Impede que cliques no botão do Google atravessem para o canvas do Pyxel
-                            const stopProp = (e) => e.stopPropagation();
-                            for (const evt of ["mousedown", "mouseup", "click", "touchstart", "touchend", "pointerdown", "pointerup"]) {{
-                                host.addEventListener(evt, stopProp, false);
-                            }}
-
-                            const btnBox = document.createElement("div");
-                            btnBox.id = "apex-feira-google-btn";
-                            host.appendChild(btnBox);
-
-                            document.body.appendChild(host);
-                            state.overlay = host;
-                            state.btnContainer = btnBox;
-                            return host;
-                        }};
-
-                        const positionOverlay = () => {{
-                            const host = state.overlay;
-                            if (!host || host.style.display === "none") return;
-                            const canvas = document.getElementById("canvas") || document.querySelector("canvas");
-                            if (!canvas) {{
-                                host.style.left = "50%";
-                                host.style.top = "60%";
-                                return;
-                            }}
-                            const rect = canvas.getBoundingClientRect();
-                            const SCREEN_W = 320;
-                            const SCREEN_H = 180;
-                            const scale = Math.min(rect.width / SCREEN_W, rect.height / SCREEN_H);
-                            const viewW = SCREEN_W * scale;
-                            const viewH = SCREEN_H * scale;
-                            const offsetX = rect.left + (rect.width - viewW) * 0.5;
-                            const offsetY = rect.top + (rect.height - viewH) * 0.5;
-
-                            // Posiciona exatamente na faixa reservada dentro do modal de Vitória (x=160, y=109)
-                            const targetX = offsetX + (160 / SCREEN_W) * viewW;
-                            const targetY = offsetY + (109 / SCREEN_H) * viewH;
-                            const btnScale = Math.max(0.65, Math.min(1.15, viewH / 340));
-
-                            host.style.left = `${{targetX}}px`;
-                            host.style.top = `${{targetY}}px`;
-                            host.style.transform = `translate(-50%, -50%) scale(${{btnScale}})`;
-                        }};
-
-                        window.addEventListener("resize", positionOverlay);
 
                         const sendCreditRequest = async (credential) => {{
-                            if (state.overlay) {{
-                                state.overlay.style.display = "none";
-                            }}
                             state.status = "SENDING";
                             state.message = `ENVIANDO +${{state.creditValue}} CREDITOS...`;
                             state.operationId = 0;
@@ -266,11 +199,6 @@ class FeiraIntegration:
                                 if (res.status === 401) {{
                                     state.status = "UNAUTHORIZED";
                                     state.message = "CONTA NAO CADASTRADA NA FEIRA (401)";
-                                    // Reexibe o botão caso o jogador queira tentar outra conta Google
-                                    if (state.overlay) {{
-                                        state.overlay.style.display = "flex";
-                                        positionOverlay();
-                                    }}
                                     return;
                                 }}
 
@@ -286,27 +214,18 @@ class FeiraIntegration:
                                 console.error("[Feira] Erro ao enviar credito:", err);
                                 state.status = "ERROR";
                                 state.message = "ERRO DE CONEXAO COM A FEIRA";
-                                if (state.overlay) {{
-                                    state.overlay.style.display = "flex";
-                                    positionOverlay();
-                                }}
                             }}
                         }};
 
                         const mountGoogleAuth = () => {{
-                            const gsi = window.google && window.google.accounts && window.google.accounts.id;
+                            const gsi = globalThis.google && globalThis.google.accounts && globalThis.google.accounts.id;
                             if (!gsi) return false;
-
-                            const host = ensureOverlay();
-                            host.style.display = "flex";
-                            positionOverlay();
 
                             gsi.initialize({{
                                 client_id: state.clientId,
-                                auto_select: false,
-                                cancel_on_tap_outside: false,
                                 callback: (res) => {{
-                                    if (!res || !res.credential) {{
+                                    if (!res || res.error || !res.credential) {{
+                                        console.error("[Feira] Erro no callback One-Tap:", res && res.error);
                                         state.status = "ERROR";
                                         state.message = "FALHA NO LOGIN GOOGLE";
                                         return;
@@ -315,22 +234,26 @@ class FeiraIntegration:
                                 }},
                             }});
 
-                            if (state.btnContainer) {{
-                                state.btnContainer.innerHTML = "";
-                                gsi.renderButton(state.btnContainer, {{
-                                    type: "standard",
-                                    theme: "filled_blue",
-                                    size: "medium",
-                                    text: "signin_with",
-                                    shape: "pill",
-                                    logo_alignment: "left",
-                                    width: 200,
-                                }});
-                            }}
-
-                            // Aciona também o prompt flutuante do Google One-Tap
+                            // Aciona exclusivamente o Google One-Tap (padrão oficial da Feira de Jogos)
                             try {{
-                                gsi.prompt();
+                                let retried = false;
+                                gsi.prompt((notification) => {{
+                                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {{
+                                        const reason = notification.isNotDisplayed()
+                                            ? notification.getNotDisplayedReason()
+                                            : notification.getSkippedReason();
+                                        console.warn("[Feira] One-Tap notification:", reason);
+                                        if (reason === "unregistered_origin" || reason === "unknown_reason") {{
+                                            state.status = "UNAVAILABLE";
+                                            state.message = "ONE-TAP ATIVO APENAS NO DOMINIO DA FEIRA";
+                                            return;
+                                        }}
+                                        if (!retried) {{
+                                            retried = true;
+                                            gsi.prompt();
+                                        }}
+                                    }}
+                                }});
                             }} catch (e) {{
                                 console.warn("[Feira] One-Tap prompt falhou:", e);
                             }}
@@ -341,7 +264,7 @@ class FeiraIntegration:
                             state.productId = Number(productId) || {self.product_id};
                             state.creditValue = Number(creditValue) || {self.credit_value};
                             state.status = "AWAITING_LOGIN";
-                            state.message = `CONECTE O GOOGLE P/ RECEBER +${{state.creditValue}} TJL`;
+                            state.message = `CONECTE NO ONE-TAP P/ RECEBER +${{state.creditValue}} TJL`;
                             state.operationId = 0;
 
                             if (state.pollTimer) {{
@@ -377,13 +300,10 @@ class FeiraIntegration:
                                 state.pollTimer = null;
                             }}
                             try {{
-                                if (window.google && window.google.accounts && window.google.accounts.id) {{
-                                    window.google.accounts.id.cancel();
+                                if (globalThis.google && globalThis.google.accounts && globalThis.google.accounts.id) {{
+                                    globalThis.google.accounts.id.cancel();
                                 }}
                             }} catch (_) {{}}
-                            if (state.overlay) {{
-                                state.overlay.style.display = "none";
-                            }}
                             state.status = "IDLE";
                             state.message = "";
                             state.operationId = 0;

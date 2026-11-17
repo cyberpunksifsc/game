@@ -6,6 +6,7 @@ from feira_integration import (
     STATUS_SENDING,
     STATUS_SUCCESS,
     STATUS_UNAUTHORIZED,
+    STATUS_UNAVAILABLE,
 )
 
 # Taxa de quadros padrão do Pyxel (pyxel.init sem fps explícito)
@@ -342,9 +343,12 @@ class PlayerHealthAndScore:
             elif feira_status == STATUS_COOLDOWN:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 9)
                 centered("LIMITE DE 1 MINUTO POR TENTATIVA", slot_y + 9, 9)
+            elif feira_status == STATUS_UNAVAILABLE:
+                pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 6)
+                centered("REQUER DOMINIO FEIRA-DE-JOGOS.DEV.BR", slot_y + 9, 6)
             else:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 12)
-                centered("ENTRAR COM GOOGLE (ONE-TAP)", slot_y + 9, 7)
+                centered("AGUARDANDO LOGIN GOOGLE (ONE-TAP)...", slot_y + 9, 7)
 
             if self.can_retry:
                 rx, ry, rw, rh = self.get_victory_retry_rect(screen_width, screen_height)
