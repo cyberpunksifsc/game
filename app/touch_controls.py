@@ -132,6 +132,9 @@ class TouchControls:
                             py >= ry - pad && py <= ry + rh + pad
                         );
                         const syncTouches = (e) => {{
+                            if (e.target && e.target.closest && e.target.closest("#apex-feira-auth-overlay")) {{
+                                return;
+                            }}
                             hideNativePyxelGamepad();
                             const active = [];
                             if (e.touches) {{

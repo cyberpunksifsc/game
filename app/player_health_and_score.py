@@ -1,4 +1,12 @@
 import pyxel
+from feira_integration import (
+    FeiraIntegration,
+    STATUS_COOLDOWN,
+    STATUS_ERROR,
+    STATUS_SENDING,
+    STATUS_SUCCESS,
+    STATUS_UNAUTHORIZED,
+)
 
 # Taxa de quadros padrão do Pyxel (pyxel.init sem fps explícito)
 FPS = 30
@@ -44,8 +52,9 @@ class PlayerHealthAndScore:
     tempo/inatividade), pontuação e condições de game over.
     """
 
-    def __init__(self, powerup_system=None):
+    def __init__(self, powerup_system=None, feira_integration=None):
         self.powerup_system = powerup_system
+        self.feira = feira_integration if feira_integration is not None else FeiraIntegration()
         self._init_sounds()
         self.reset()
 
@@ -78,6 +87,9 @@ class PlayerHealthAndScore:
         if self.powerup_system is not None:
             self.powerup_system.activate_for_shift()
 
+        if self.feira is not None:
+            self.feira.reset()
+
     # ------------------------------------------------------------------
     # Atualização
     # ------------------------------------------------------------------
@@ -85,6 +97,8 @@ class PlayerHealthAndScore:
         """Atualiza a barra corporativa e os timers. `is_idle` indica jogador parado e sem trabalhar."""
         if self.is_game_over:
             self.game_over_timer += 1
+            if self.is_victory and self.feira is not None:
+                self.feira.update()
             return
 
         if self.invulnerable_timer > 0:
@@ -169,10 +183,34 @@ class PlayerHealthAndScore:
         self.efficiency_bonus = int(round(max(0.0, self.efficiency) * BONUS_MAX_EFFICIENCY))
         self.score += self.hp_bonus + self.efficiency_bonus
         self.trigger_game_over(REASON_VICTORY)
+        if self.feira is not None:
+            self.feira.start_victory_flow()
         try:
             pyxel.play(0, SOUND_VICTORY_FANFARE)
         except BaseException:
             pass
+
+    @staticmethod
+    def get_victory_retry_rect(screen_width: int = 320, screen_height: int = 180) -> tuple[int, int, int, int]:
+        """Retorna o retângulo (x, y, w, h) do botão de Novo Turno na tela de vitória."""
+        box_w = 236
+        box_h = 122
+        bx = (screen_width - box_w) // 2
+        by = (screen_height - box_h) // 2
+        btn_w = 160
+        btn_h = 14
+        return (bx + (box_w - btn_w) // 2, by + 101, btn_w, btn_h)
+
+    def is_victory_retry_click(
+        self,
+        mx: float,
+        my: float,
+        screen_width: int = 320,
+        screen_height: int = 180,
+    ) -> bool:
+        """Verifica se um clique/toque na tela de vitória ocorreu sobre o botão de Novo Turno."""
+        rx, ry, rw, rh = self.get_victory_retry_rect(screen_width, screen_height)
+        return rx <= mx <= (rx + rw) and ry <= my <= (ry + rh)
 
     @property
     def can_retry(self) -> bool:
@@ -247,8 +285,8 @@ class PlayerHealthAndScore:
             self.draw_game_over(screen_width, screen_height)
 
     def draw_game_over(self, screen_width: int, screen_height: int):
-        box_w = 220
-        box_h = 72
+        box_w = 236 if self.is_victory else 220
+        box_h = 122 if self.is_victory else 72
         bx = (screen_width - box_w) // 2
         by = (screen_height - box_h) // 2
 
@@ -263,13 +301,57 @@ class PlayerHealthAndScore:
             pyxel.text(bx + (box_w - len(text) * 4) // 2, y, text, col)
 
         if self.is_victory:
-            centered("[ EXPEDIENTE CONCLUIDO! ]", by + 8, 11)
-            centered("META CORPORATIVA ATINGIDA NO APEX", by + 18, 10)
-            centered(f"BONUS HP: +{self.hp_bonus}   EFIC: +{self.efficiency_bonus}", by + 27, 12)
-            centered(f"PONTUACAO FINAL: {self.score:05d}", by + 39, 10)
-            centered(f"LIMPOS: {self.windows_cleaned}   REPAROS: {self.windows_repaired}", by + 48, 7)
-            if self.can_retry and (pyxel.frame_count // 15) % 2 == 0:
-                centered("TOQUE NA TELA OU [R]/[ESPACO] P/ NOVO TURNO", by + 60, 11)
+            centered("[ EXPEDIENTE CONCLUIDO! ]", by + 6, 11)
+            centered("META CORPORATIVA ATINGIDA NO APEX", by + 15, 10)
+            centered(f"BONUS HP: +{self.hp_bonus}   EFIC: +{self.efficiency_bonus}", by + 24, 12)
+            centered(f"PONTUACAO FINAL: {self.score:05d}", by + 33, 10)
+            centered(f"LIMPOS: {self.windows_cleaned}   REPAROS: {self.windows_repaired}", by + 42, 7)
+
+            # Seção Feira de Jogos (Google One-Tap OAuth + POST de créditos)
+            pyxel.line(bx + 8, by + 50, bx + box_w - 9, by + 50, 5)
+            feira_status = self.feira.status if self.feira is not None else ""
+            feira_msg = (
+                self.feira.status_message
+                if (self.feira is not None and self.feira.status_message)
+                else "CONECTE O GOOGLE P/ RECEBER +250 TJL"
+            )
+            if feira_status == STATUS_SUCCESS:
+                msg_col = 11
+            elif feira_status == STATUS_SENDING:
+                msg_col = 12
+            elif feira_status == STATUS_COOLDOWN:
+                msg_col = 9
+            elif feira_status in (STATUS_UNAUTHORIZED, STATUS_ERROR):
+                msg_col = 8
+            else:
+                msg_col = 10
+            centered(feira_msg, by + 54, msg_col)
+
+            # Área de status / slot do botão Google One-Tap
+            slot_x = bx + 28
+            slot_y = by + 66
+            slot_w = box_w - 56
+            slot_h = 24
+            pyxel.rect(slot_x, slot_y, slot_w, slot_h, 1)
+            if feira_status == STATUS_SUCCESS:
+                pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 11)
+                centered("CREDITO ENVIADO P/ SUA CONTA GOOGLE!", slot_y + 9, 11)
+            elif feira_status == STATUS_SENDING:
+                pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 12)
+                centered("AUTENTICADO! PROCESSANDO CREDITO...", slot_y + 9, 12)
+            elif feira_status == STATUS_COOLDOWN:
+                pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 9)
+                centered("LIMITE DE 1 MINUTO POR TENTATIVA", slot_y + 9, 9)
+            else:
+                pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 12)
+                centered("ENTRAR COM GOOGLE (ONE-TAP)", slot_y + 9, 7)
+
+            if self.can_retry:
+                rx, ry, rw, rh = self.get_victory_retry_rect(screen_width, screen_height)
+                pyxel.rect(rx, ry, rw, rh, 1)
+                btn_border = 11 if (pyxel.frame_count // 15) % 2 == 0 else 5
+                pyxel.rectb(rx, ry, rw, rh, btn_border)
+                centered("[ NOVO TURNO (R / ESPACO) ]", ry + 4, 11)
             return
 
         reason_title, reason_desc = GAME_OVER_TEXTS.get(self.game_over_reason, ("", ""))

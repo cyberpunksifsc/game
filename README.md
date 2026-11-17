@@ -95,6 +95,7 @@ Todos os módulos principais residem no diretório `app/`:
 | `powerup_system.py` | Sistema de Power-Ups pré-partida (*Escudo Reativo*, *Rodo Turbo* e *Estabilizador Corporativo*) e aplicação de seus modificadores. |
 | `audio_manager.py` | Gerenciador de efeitos sonoros chiptune e trilha sonora dinâmica adaptada por setor de altitude (Baixo, Médio e Apex) com controle de mute (`M`). |
 | `touch_controls.py` | Interface de controles virtuais na tela (D-Pad e botões de ação) para dispositivos móveis/web e integração com Gamepad. |
+| `feira_integration.py` | Integração OAuth (Google One-Tap) na tela de vitória e envio de créditos (`POST /api/v2/credit`) para a Feira de Jogos. |
 
 ---
 
