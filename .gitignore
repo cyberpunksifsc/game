@@ -29,7 +29,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -242,7 +241,5 @@ $RECYCLE.BIN/
 *.lnk
 
 # Pyxel Web Build Artifacts
-*.pyxapp
-dist/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,venv,visualstudiocode,windows,linux
