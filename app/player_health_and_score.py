@@ -1,4 +1,5 @@
 import pyxel
+from feedback_system import FeedbackSystem, QR_TOTAL_SIZE, draw_feedback_qr
 from feira_integration import (
     FeiraIntegration,
     STATUS_COOLDOWN,
@@ -53,9 +54,10 @@ class PlayerHealthAndScore:
     tempo/inatividade), pontuação e condições de game over.
     """
 
-    def __init__(self, powerup_system=None, feira_integration=None):
+    def __init__(self, powerup_system=None, feira_integration=None, feedback_system=None):
         self.powerup_system = powerup_system
         self.feira = feira_integration if feira_integration is not None else FeiraIntegration()
+        self.feedback = feedback_system if feedback_system is not None else FeedbackSystem()
         self._init_sounds()
         self.reset()
 
@@ -91,6 +93,9 @@ class PlayerHealthAndScore:
         if self.feira is not None:
             self.feira.reset()
 
+        if self.feedback is not None:
+            self.feedback.set_victory_active(False)
+
     # ------------------------------------------------------------------
     # Atualização
     # ------------------------------------------------------------------
@@ -98,8 +103,19 @@ class PlayerHealthAndScore:
         """Atualiza a barra corporativa e os timers. `is_idle` indica jogador parado e sem trabalhar."""
         if self.is_game_over:
             self.game_over_timer += 1
-            if self.is_victory and self.feira is not None:
-                self.feira.update()
+            if self.is_victory:
+                if self.feira is not None:
+                    self.feira.update()
+                if self.feedback is not None:
+                    clicked_fb = False
+                    try:
+                        clicked_fb = pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and self.is_victory_feedback_click(
+                            pyxel.mouse_x,
+                            pyxel.mouse_y,
+                        )
+                    except BaseException:
+                        clicked_fb = False
+                    self.feedback.update_desktop_input(clicked_feedback=clicked_fb)
             return
 
         if self.invulnerable_timer > 0:
@@ -175,6 +191,8 @@ class PlayerHealthAndScore:
         self.is_victory = (reason == REASON_VICTORY)
         self.game_over_reason = reason
         self.game_over_timer = 0
+        if not self.is_victory and self.feedback is not None:
+            self.feedback.set_victory_active(False)
 
     def trigger_victory(self):
         """Encerra o expediente com vitória ao alcançar o topo (Apex), somando bônus finais."""
@@ -186,21 +204,60 @@ class PlayerHealthAndScore:
         self.trigger_game_over(REASON_VICTORY)
         if self.feira is not None:
             self.feira.start_victory_flow()
+        if self.feedback is not None:
+            self.feedback.set_victory_active(
+                True,
+                feedback_rect=self.get_victory_feedback_rect(),
+                qr_rect=self.get_victory_qr_rect(),
+            )
         try:
             pyxel.play(0, SOUND_VICTORY_FANFARE)
         except BaseException:
             pass
 
     @staticmethod
-    def get_victory_retry_rect(screen_width: int = 320, screen_height: int = 180) -> tuple[int, int, int, int]:
-        """Retorna o retângulo (x, y, w, h) do botão de Novo Turno na tela de vitória."""
-        box_w = 236
-        box_h = 122
+    def _get_victory_box(screen_width: int = 320, screen_height: int = 180) -> tuple[int, int, int, int]:
+        box_w = 292
+        box_h = 128
         bx = (screen_width - box_w) // 2
         by = (screen_height - box_h) // 2
-        btn_w = 160
-        btn_h = 14
-        return (bx + (box_w - btn_w) // 2, by + 101, btn_w, btn_h)
+        return (bx, by, box_w, box_h)
+
+    @staticmethod
+    def get_victory_feedback_rect(screen_width: int = 320, screen_height: int = 180) -> tuple[int, int, int, int]:
+        """Retorna o retângulo (x, y, w, h) do botão de Feedback na tela de vitória."""
+        bx, by, _, _ = PlayerHealthAndScore._get_victory_box(screen_width, screen_height)
+        return (bx + 8, by + 104, 78, 14)
+
+    @staticmethod
+    def get_victory_qr_rect(screen_width: int = 320, screen_height: int = 180) -> tuple[int, int, int, int]:
+        """Retorna o retângulo (x, y, w, h) do QR Code de Feedback na tela de vitória."""
+        bx, by, _, _ = PlayerHealthAndScore._get_victory_box(screen_width, screen_height)
+        qr_area_x = bx + 230
+        qr_area_w = 58
+        qr_x = qr_area_x + (qr_area_w - QR_TOTAL_SIZE) // 2
+        qr_y = by + 30
+        return (qr_x, qr_y, QR_TOTAL_SIZE, QR_TOTAL_SIZE)
+
+    @staticmethod
+    def get_victory_retry_rect(screen_width: int = 320, screen_height: int = 180) -> tuple[int, int, int, int]:
+        """Retorna o retângulo (x, y, w, h) do botão de Novo Turno na tela de vitória."""
+        bx, by, _, _ = PlayerHealthAndScore._get_victory_box(screen_width, screen_height)
+        return (bx + 90, by + 104, 118, 14)
+
+    def is_victory_feedback_click(
+        self,
+        mx: float,
+        my: float,
+        screen_width: int = 320,
+        screen_height: int = 180,
+    ) -> bool:
+        """Verifica se um clique/toque na tela de vitória ocorreu sobre o botão ou QR de Feedback."""
+        fx, fy, fw, fh = self.get_victory_feedback_rect(screen_width, screen_height)
+        if fx <= mx <= (fx + fw) and fy <= my <= (fy + fh):
+            return True
+        qx, qy, qw, qh = self.get_victory_qr_rect(screen_width, screen_height)
+        return qx <= mx <= (qx + qw) and qy <= my <= (qy + qh)
 
     def is_victory_retry_click(
         self,
@@ -286,10 +343,13 @@ class PlayerHealthAndScore:
             self.draw_game_over(screen_width, screen_height)
 
     def draw_game_over(self, screen_width: int, screen_height: int):
-        box_w = 236 if self.is_victory else 220
-        box_h = 122 if self.is_victory else 72
-        bx = (screen_width - box_w) // 2
-        by = (screen_height - box_h) // 2
+        if self.is_victory:
+            bx, by, box_w, box_h = self._get_victory_box(screen_width, screen_height)
+        else:
+            box_w = 220
+            box_h = 72
+            bx = (screen_width - box_w) // 2
+            by = (screen_height - box_h) // 2
 
         border_col = 11 if self.is_victory else 8
         inner_col = 10 if self.is_victory else 8
@@ -298,18 +358,20 @@ class PlayerHealthAndScore:
         pyxel.rectb(bx, by, box_w, box_h, border_col)
         pyxel.rectb(bx + 2, by + 2, box_w - 4, box_h - 4, inner_col)
 
-        def centered(text: str, y: int, col: int):
-            pyxel.text(bx + (box_w - len(text) * 4) // 2, y, text, col)
+        def centered(text: str, y: int, col: int, area_x: int = bx, area_w: int = box_w):
+            pyxel.text(area_x + (area_w - len(text) * 4) // 2, y, text, col)
 
         if self.is_victory:
-            centered("[ EXPEDIENTE CONCLUIDO! ]", by + 6, 11)
-            centered("META CORPORATIVA ATINGIDA NO APEX", by + 15, 10)
-            centered(f"BONUS HP: +{self.hp_bonus}   EFIC: +{self.efficiency_bonus}", by + 24, 12)
-            centered(f"PONTUACAO FINAL: {self.score:05d}", by + 33, 10)
-            centered(f"LIMPOS: {self.windows_cleaned}   REPAROS: {self.windows_repaired}", by + 42, 7)
+            col_x = bx + 4
+            col_w = 222
+            centered("[ EXPEDIENTE CONCLUIDO! ]", by + 6, 11, col_x, col_w)
+            centered("META CORPORATIVA ATINGIDA NO APEX", by + 15, 10, col_x, col_w)
+            centered(f"BONUS HP: +{self.hp_bonus}   EFIC: +{self.efficiency_bonus}", by + 24, 12, col_x, col_w)
+            centered(f"PONTUACAO FINAL: {self.score:05d}", by + 33, 10, col_x, col_w)
+            centered(f"LIMPOS: {self.windows_cleaned}   REPAROS: {self.windows_repaired}", by + 42, 7, col_x, col_w)
 
             # Seção Feira de Jogos (Google One-Tap OAuth + POST de créditos)
-            pyxel.line(bx + 8, by + 50, bx + box_w - 9, by + 50, 5)
+            pyxel.line(col_x + 4, by + 50, col_x + col_w - 5, by + 50, 5)
             feira_status = self.feira.status if self.feira is not None else ""
             feira_msg = (
                 self.feira.status_message
@@ -326,36 +388,53 @@ class PlayerHealthAndScore:
                 msg_col = 8
             else:
                 msg_col = 10
-            centered(feira_msg, by + 54, msg_col)
+            centered(feira_msg, by + 54, msg_col, col_x, col_w)
 
             # Área de status / slot do botão Google One-Tap
-            slot_x = bx + 28
+            slot_x = col_x + 12
             slot_y = by + 66
-            slot_w = box_w - 56
+            slot_w = col_w - 24
             slot_h = 24
             pyxel.rect(slot_x, slot_y, slot_w, slot_h, 1)
             if feira_status == STATUS_SUCCESS:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 11)
-                centered("CREDITO ENVIADO P/ SUA CONTA GOOGLE!", slot_y + 9, 11)
+                centered("CREDITO ENVIADO P/ SUA CONTA GOOGLE!", slot_y + 9, 11, col_x, col_w)
             elif feira_status == STATUS_SENDING:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 12)
-                centered("AUTENTICADO! PROCESSANDO CREDITO...", slot_y + 9, 12)
+                centered("AUTENTICADO! PROCESSANDO CREDITO...", slot_y + 9, 12, col_x, col_w)
             elif feira_status == STATUS_COOLDOWN:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 9)
-                centered("LIMITE DE 1 MINUTO POR TENTATIVA", slot_y + 9, 9)
+                centered("LIMITE DE 1 MINUTO POR TENTATIVA", slot_y + 9, 9, col_x, col_w)
             elif feira_status == STATUS_UNAVAILABLE:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 6)
-                centered("REQUER DOMINIO FEIRA-DE-JOGOS.DEV.BR", slot_y + 9, 6)
+                centered("REQUER DOMINIO FEIRA-DE-JOGOS.DEV.BR", slot_y + 9, 6, col_x, col_w)
             else:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 12)
-                centered("AGUARDANDO LOGIN GOOGLE (ONE-TAP)...", slot_y + 9, 7)
+                centered("AGUARDANDO LOGIN GOOGLE (ONE-TAP)...", slot_y + 9, 7, col_x, col_w)
+
+            # Botão de Feedback (sempre visível na vitória)
+            fx, fy, fw, fh = self.get_victory_feedback_rect(screen_width, screen_height)
+            pyxel.rect(fx, fy, fw, fh, 1)
+            pyxel.rectb(fx, fy, fw, fh, 12)
+            centered("[ FEEDBACK (F) ]", fy + 4, 10, fx, fw)
 
             if self.can_retry:
                 rx, ry, rw, rh = self.get_victory_retry_rect(screen_width, screen_height)
                 pyxel.rect(rx, ry, rw, rh, 1)
                 btn_border = 11 if (pyxel.frame_count // 15) % 2 == 0 else 5
                 pyxel.rectb(rx, ry, rw, rh, btn_border)
-                centered("[ NOVO TURNO (R / ESPACO) ]", ry + 4, 11)
+                centered("[ NOVO TURNO (R / ESPACO) ]", ry + 4, 11, rx, rw)
+
+            # Coluna direita: QR Code para feedback rápido por celular
+            pyxel.line(bx + 228, by + 6, bx + 228, by + box_h - 7, 5)
+            qr_area_x = bx + 230
+            qr_area_w = 58
+            centered("AVALIE O", by + 12, 10, qr_area_x, qr_area_w)
+            centered("JOGO!", by + 20, 10, qr_area_x, qr_area_w)
+            qx, qy, _, _ = self.get_victory_qr_rect(screen_width, screen_height)
+            draw_feedback_qr(qx, qy)
+            centered("[F] OU QR", by + 82, 12, qr_area_x, qr_area_w)
+            centered("FORMULARIO", by + 91, 7, qr_area_x, qr_area_w)
             return
 
         reason_title, reason_desc = GAME_OVER_TEXTS.get(self.game_over_reason, ("", ""))
