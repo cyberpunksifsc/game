@@ -407,10 +407,10 @@ class PlayerHealthAndScore:
                 centered("LIMITE DE 1 MINUTO POR TENTATIVA", slot_y + 9, 9, col_x, col_w)
             elif feira_status == STATUS_UNAVAILABLE:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 6)
-                centered("REQUER DOMINIO FEIRA-DE-JOGOS.DEV.BR", slot_y + 9, 6, col_x, col_w)
+                centered("LOGIN GOOGLE INDISPONIVEL", slot_y + 9, 6, col_x, col_w)
             else:
                 pyxel.rectb(slot_x, slot_y, slot_w, slot_h, 12)
-                centered("AGUARDANDO LOGIN GOOGLE (ONE-TAP)...", slot_y + 9, 7, col_x, col_w)
+                centered("ENTRAR COM GOOGLE (ONE-TAP)", slot_y + 9, 7, col_x, col_w)
 
             # Botão de Feedback (sempre visível na vitória)
             fx, fy, fw, fh = self.get_victory_feedback_rect(screen_width, screen_height)

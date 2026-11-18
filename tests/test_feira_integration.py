@@ -156,3 +156,26 @@ def test_draw_game_over_victory_renders_all_feira_states(monkeypatch):
         assert msg in rendered_strings
         assert "[ NOVO TURNO (R / ESPACO) ]" in rendered_strings
 
+
+def test_web_bridge_has_no_domain_restriction_and_includes_button_fallback(monkeypatch):
+    import sys
+    import types
+
+    captured_js = []
+    fake_js = types.ModuleType("js")
+    fake_js.eval = lambda code: captured_js.append(code)
+    monkeypatch.setitem(sys.modules, "js", fake_js)
+
+    feira = FeiraIntegration()
+    assert feira._web_ready is True
+    assert len(captured_js) == 1
+
+    js_code = captured_js[0]
+    assert "REQUER DOMINIO" not in js_code
+    assert "ONE-TAP ATIVO APENAS" not in js_code
+    assert "unregistered_origin" not in js_code
+    assert "gsi.renderButton" in js_code
+    assert "gsi.prompt" in js_code
+    assert "state.gsiInitialized" in js_code
+    assert "itp_support: true" in js_code
+
