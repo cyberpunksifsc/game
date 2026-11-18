@@ -99,14 +99,23 @@ class Gameplay:
         """Comando de retentar após Game Over (teclado, toque, mouse ou gamepad)."""
         touch = self.player.touch_controls
         touch_on_ui = touch.is_touching_ui(pyxel.mouse_x, pyxel.mouse_y)
-        mouse_retry = pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui
-        if mouse_retry and self.stats.is_victory:
-            mouse_retry = self.stats.is_victory_retry_click(
+        mouse_clicked = pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT) and not touch_on_ui
+        mouse_retry = mouse_clicked
+        if self.stats.is_victory:
+            if mouse_clicked and self.stats.is_victory_feedback_click(
                 pyxel.mouse_x,
                 pyxel.mouse_y,
                 self.app.WIDTH,
                 self.app.HEIGHT,
-            )
+            ):
+                return False
+            if mouse_clicked:
+                mouse_retry = self.stats.is_victory_retry_click(
+                    pyxel.mouse_x,
+                    pyxel.mouse_y,
+                    self.app.WIDTH,
+                    self.app.HEIGHT,
+                )
         return (
             pyxel.btnp(pyxel.KEY_R)
             or pyxel.btnp(pyxel.KEY_SPACE)
