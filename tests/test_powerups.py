@@ -171,6 +171,27 @@ def test_main_menu_powerup_card_click_does_not_start_game(monkeypatch):
     monkeypatch.setattr(MainMenu, "carregar_recursos", lambda self: None)
     menu = MainMenu(app)
 
+    # Tutorial opens automatically when the game starts
+    assert menu.show_tutorial is True
+
+    # First click closes the tutorial and returns to the Main Menu (does not start gameplay)
+    monkeypatch.setattr(pyxel, "mouse_x", 160, raising=False)
+    monkeypatch.setattr(pyxel, "mouse_y", 160, raising=False)
+    monkeypatch.setattr(pyxel, "btnp", lambda key: key == pyxel.MOUSE_BUTTON_LEFT)
+    assert menu.update() is None
+    assert menu.show_tutorial is False
+
+    # Clicking the tutorial button on the Main Menu reopens the tutorial
+    tx, ty, tw, th = menu.get_tutorial_open_button_rect(app.WIDTH, app.HEIGHT)
+    monkeypatch.setattr(pyxel, "mouse_x", tx + tw // 2, raising=False)
+    monkeypatch.setattr(pyxel, "mouse_y", ty + th // 2, raising=False)
+    assert menu.update() is None
+    assert menu.show_tutorial is True
+
+    # Close the tutorial again to interact with the Main Menu
+    assert menu.update() is None
+    assert menu.show_tutorial is False
+
     # Click inside the 2nd card (POWERUP_SHIELD)
     cards = menu.powerup_system.get_card_rects(app.WIDTH, app.HEIGHT)
     shield_pid, cx, cy, cw, ch = cards[1]
@@ -178,7 +199,6 @@ def test_main_menu_powerup_card_click_does_not_start_game(monkeypatch):
 
     monkeypatch.setattr(pyxel, "mouse_x", cx + cw // 2, raising=False)
     monkeypatch.setattr(pyxel, "mouse_y", cy + ch // 2, raising=False)
-    monkeypatch.setattr(pyxel, "btnp", lambda key: key == pyxel.MOUSE_BUTTON_LEFT)
 
     new_state = menu.update()
     assert new_state is None
